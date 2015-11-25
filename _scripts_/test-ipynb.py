@@ -15,6 +15,7 @@ import os
 import glob
 import subprocess
 import copy
+import re
 
 from common import RedirectStdStreams, EXCLUDE
 
