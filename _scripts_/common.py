@@ -4,6 +4,8 @@ Provides Context Manager for Test Scripts
 
 import sys
 
+EXCLUDE = ["_scripts_/","_archive_/","solow/"]
+
 class RedirectStdStreams(object):
     def __init__(self, stdout=None, stderr=None):
         self._stdout = stdout or sys.stdout
