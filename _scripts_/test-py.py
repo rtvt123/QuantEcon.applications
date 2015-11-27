@@ -58,6 +58,7 @@ def example_tests(log_path='./_scripts_/py-tests.log'):
                 filtered_test_files.remove(fln)
     passed = []
     failed = []
+    #TODO: Update script so that python is run from within the folder to allow for local imports of files
     with open(log_path, 'w') as f:
         for i,fname in enumerate(filtered_test_files):
             print("Checking program %s (%s/%s) ..."%(fname,i,len(filtered_test_files)))
