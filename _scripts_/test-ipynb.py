@@ -1,10 +1,12 @@
 #!/usr/bin/python
 """
-Test solutions/*.ipynb
+Test script for QuantEcon ipynb Notebooks
+==========================================
+    <topic>/*.ipynb
 
 Notes
 -----
-  1. This script should be run from the root level "python scripts/test-solutions.py"
+  1. This script should be run from the root level "python scripts/test-ipynb.py"
 
 """
 
@@ -12,21 +14,29 @@ import sys
 import os
 import glob
 import subprocess
+import copy
+import re
 
-from common import RedirectStdStreams
+from common import RedirectStdStreams, EXCLUDE
 
-def solutions_tests(test_dir='solutions/', log_path='../scripts/solutions-tests.log'):
+def solutions_tests(log_path='./_scripts_/ipynb-tests.log'):
     """
     Execute each Jupyter Notebook
     """
-    os.chdir(test_dir)
-    test_files = glob.glob(os.path.join('*.ipynb'))
+    test_files = glob.glob('./**/*.ipynb')
     test_files.sort()
+    filtered_test_files = copy.copy(test_files)
+    for exclude in EXCLUDE:
+        print("Excluding Pattern: %s"%exclude)
+        for fln in test_files:
+            if re.search(exclude, fln):
+                print("Dropping: %s" % fln)
+                filtered_test_files.remove(fln)
     passed = []
     failed = []
     with open(log_path, 'w') as f:
-            for i,fname in enumerate(test_files):
-                print("Checking notebook %s (%s/%s) ..."%(fname,i,len(test_files)))
+            for i,fname in enumerate(filtered_test_files):
+                print("Checking notebook %s (%s/%s) ..."%(fname,i,len(filtered_test_files)))
                 with RedirectStdStreams(stdout=f, stderr=f):
                     print("---> Executing '%s' <---" % fname)
                     sys.stdout.flush()
@@ -41,7 +51,7 @@ def solutions_tests(test_dir='solutions/', log_path='../scripts/solutions-tests.
                     print
                     sys.stdout.flush()
     #-Report-#
-    print("[solutions/*.py] Passed %i/%i: " %(len(passed), len(test_files)))
+    print("Passed %i/%i: " %(len(passed), len(filtered_test_files)))
     if len(failed) == 0:
     	print("Failed Notebooks:\n\tNone")
     else:
@@ -52,7 +62,7 @@ def solutions_tests(test_dir='solutions/', log_path='../scripts/solutions-tests.
 
 
 if __name__ == '__main__':
-    print("-----------------------------")
-    print("Running all solutions/*.ipynb")
-    print("-----------------------------")
+    print("-------------------------")
+    print("Running all *.ipynb files")
+    print("-------------------------")
     solutions_tests(*sys.argv[1:])
