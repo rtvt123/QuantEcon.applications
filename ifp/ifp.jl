@@ -65,7 +65,8 @@ Constructor with default values for `ConsumerProblem`
 
 ##### Notes
 
-$(____kwarg_note)
+There is also a version of this function that accepts keyword arguments for
+each parameter.
 
 """
 function ConsumerProblem(r=0.01, bet=0.96, Pi=[0.6 0.4; 0.05 0.95],
@@ -85,7 +86,7 @@ function ConsumerProblem(;r=0.01, beta=0.96, Pi=[0.6 0.4; 0.05 0.95],
 end
 
 """
-$(____bellman_main_docstring).
+Apply the Bellman operator for a given model and initial value.
 
 ##### Arguments
 
@@ -144,7 +145,7 @@ function bellman_operator(cp::ConsumerProblem, V::Matrix; ret_policy=false)
 end
 
 """
-$(____greedy_main_docstring).
+Extract the greedy policy (policy function) of the model.
 
 ##### Arguments
 
