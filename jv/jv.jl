@@ -12,6 +12,8 @@ Simple port of the file quantecon.models.jv
 http://quant-econ.net/jl/jv.html
 =#
 
+using Distributions
+
 # TODO: the three lines below will allow us to use the non brute-force
 #       approach in bellman operator. I have commented it out because
 #       I am waiting on a simple constrained optimizer to be written in
@@ -84,7 +86,8 @@ Constructor with default values for `JvWorker`
 
 ##### Notes
 
-$(____kwarg_note)
+There is also a version of this function that accepts keyword arguments for
+each parameter
 
 """
 function JvWorker(A=1.4, alpha=0.6, bet=0.96, grid_size=50)
@@ -124,7 +127,7 @@ JvWorker(;A=1.4, alpha=0.6, bet=0.96, grid_size=50) = JvWorker(A, alpha, bet,
 #       depending on the value of ret_policies. This is probably not a
 #       huge deal, but it is something to be aware of
 """
-$(____bellman_main_docstring).
+Apply the Bellman operator for a given model and initial value.
 
 ##### Arguments
 
@@ -251,7 +254,7 @@ function bellman_operator(jv::JvWorker, V::Vector; brute_force=true,
 end
 
 """
-$(____greedy_main_docstring).
+Extract the greedy policy (policy function) of the model.
 
 ##### Arguments
 
