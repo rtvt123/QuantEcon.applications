@@ -55,7 +55,8 @@ Constructor with default values for `CareerWorkerProblem`
 
 ##### Notes
 
-$(____kwarg_note)
+There is also a version of this function that accepts keyword arguments for
+each parameter
 """
 function CareerWorkerProblem(beta::Real=0.95, B::Real=5.0, N::Real=50,
                              F_a::Real=1, F_b::Real=1, G_a::Real=1,
@@ -78,7 +79,7 @@ function CareerWorkerProblem(;beta::Real=0.95, B::Real=5.0, N::Real=50,
 end
 
 """
-$(____bellman_main_docstring).
+Apply the Bellman operator for a given model and initial value.
 
 ##### Arguments
 
@@ -133,7 +134,7 @@ function bellman_operator(cp::CareerWorkerProblem, v::Array; ret_policy=false)
 end
 
 """
-$(____greedy_main_docstring).
+Extract the greedy policy (policy function) of the model.
 
 ##### Arguments
 
