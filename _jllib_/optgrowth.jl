@@ -22,9 +22,6 @@ http://quant-econ.net/jl/dp_intro.html
 
     See the constructor below for details
 =#
-using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
-using Optim: optimize
-
 """
 Neoclassical growth model
 
@@ -70,7 +67,7 @@ function GrowthModel(f=default_f, bet=0.95, u=default_u, grid_max=2,
 end
 
 """
-Apply the Bellman operator for a given model and initial value.
+$(____bellman_main_docstring).
 
 ##### Arguments
 
@@ -114,7 +111,7 @@ function bellman_operator(g::GrowthModel, w::Vector;
 end
 
 """
-Extract the greedy policy (policy function) of the model.
+$(____greedy_main_docstring).
 
 ##### Arguments
 

@@ -14,7 +14,6 @@ http://quant-econ.net/jl/odu.html
 
 =#
 
-using Distributions
 
 """
 Unemployment/search problem where offer distribution is unknown
@@ -71,8 +70,7 @@ Constructor for `SearchProblem` with default values
 
 ##### Notes
 
-There is also a version of this function that accepts keyword arguments for
-each parameter
+$(____kwarg_note)
 
 """
 function SearchProblem(bet=0.95, c=0.6, F_a=1, F_b=1, G_a=3, G_b=1.2,
@@ -114,7 +112,7 @@ function q(sp::SearchProblem, w, pi_val)
 end
 
 """
-Apply the Bellman operator for a given model and initial value.
+$(____bellman_main_docstring).
 
 ##### Arguments
 
@@ -179,7 +177,7 @@ end
 
 
 """
-Extract the greedy policy (policy function) of the model.
+$(____greedy_main_docstring).
 
 ##### Arguments
 

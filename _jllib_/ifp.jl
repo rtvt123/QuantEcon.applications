@@ -13,8 +13,9 @@ References
 http://quant-econ.net/jl/ifp.html
 
 =#
-using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
-using Optim: optimize
+# using PyCall
+# @pyimport scipy.optimize as opt
+# brentq = opt.brentq
 
 
 """
@@ -64,8 +65,7 @@ Constructor with default values for `ConsumerProblem`
 
 ##### Notes
 
-There is also a version of this function that accepts keyword arguments for
-each parameter.
+$(____kwarg_note)
 
 """
 function ConsumerProblem(r=0.01, bet=0.96, Pi=[0.6 0.4; 0.05 0.95],
@@ -85,7 +85,7 @@ function ConsumerProblem(;r=0.01, beta=0.96, Pi=[0.6 0.4; 0.05 0.95],
 end
 
 """
-Apply the Bellman operator for a given model and initial value.
+$(____bellman_main_docstring).
 
 ##### Arguments
 
@@ -144,7 +144,7 @@ function bellman_operator(cp::ConsumerProblem, V::Matrix; ret_policy=false)
 end
 
 """
-Extract the greedy policy (policy function) of the model.
+$(____greedy_main_docstring).
 
 ##### Arguments
 
