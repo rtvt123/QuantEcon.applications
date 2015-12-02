@@ -67,7 +67,7 @@ function GrowthModel(f=default_f, bet=0.95, u=default_u, grid_max=2,
 end
 
 """
-$(____bellman_main_docstring).
+Apply the Bellman operator for a given model and initial value.
 
 ##### Arguments
 
@@ -111,7 +111,7 @@ function bellman_operator(g::GrowthModel, w::Vector;
 end
 
 """
-$(____greedy_main_docstring).
+Extract the greedy policy (policy function) of the model.
 
 ##### Arguments
 
