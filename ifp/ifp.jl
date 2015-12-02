@@ -13,9 +13,8 @@ References
 http://quant-econ.net/jl/ifp.html
 
 =#
-# using PyCall
-# @pyimport scipy.optimize as opt
-# brentq = opt.brentq
+using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
+using Optim: optimize
 
 
 """

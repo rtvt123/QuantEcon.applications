@@ -27,6 +27,9 @@ http://quant-econ.net/jl/markov_asset.html
 
 TODO: refactor. Python is much cleaner.
 =#
+using Distributions
+using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
+
 
 """
 The Lucas asset pricing model
@@ -172,7 +175,7 @@ function compute_lt_price(lt::LucasTree; kwargs...)
 
     f_init = zeros(grid)  # Initial condition
     func(x) = lucas_operator(lt, x)
-    f = compute_fixed_point(func, f_init; kwargs...)
+    f = compute_fixed_point(func, f_init; max_iter=500, verbose=false, kwargs...)
 
     # p(y) = f(y) / u'(y) = f(y) * y^gamma
     price = f .* grid.^(gam)

@@ -22,6 +22,9 @@ http://quant-econ.net/jl/dp_intro.html
 
     See the constructor below for details
 =#
+using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
+using Optim: optimize
+
 """
 Neoclassical growth model
 
