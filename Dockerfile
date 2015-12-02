@@ -68,30 +68,15 @@ USER econ
 # Python packages
 RUN conda install --yes pip numpy pandas scikit-learn scikit-image matplotlib scipy seaborn sympy cython patsy statsmodels cloudpickle dill numba bokeh && conda clean -yt
 
-# Now for a python2 environment
-#RUN conda create -p $CONDA_DIR/envs/python2 python=2.7 ipython numpy pandas scikit-learn scikit-image matplotlib scipy seaborn sympy cython patsy statsmodels cloudpickle dill numba bokeh && conda clean -yt
-#RUN $CONDA_DIR/envs/python2/bin/python $CONDA_DIR/envs/python2/bin/ipython kernelspec install-self --user
-
 #Install QuantEcon
 RUN pip install quantecon
 #RUN source activate python2 && pip install quantecon && source deactivate python2
-
-# R packages
-RUN conda config --add channels r
-RUN conda install --yes r-irkernel r-plyr r-devtools r-rcurl r-dplyr r-ggplot2 r-caret rpy2 r-tidyr r-shiny r-rmarkdown r-forecast r-stringr r-rsqlite r-reshape2 r-nycflights13 r-randomforest && conda clean -yt
 
 # IJulia and Julia packages
 RUN julia -e 'Pkg.add("IJulia")'
 RUN julia -e 'Pkg.add("PyPlot")' && julia -e 'Pkg.add("Distributions")' && julia -e 'Pkg.add("KernelEstimator")' 
 # julia -e 'Pkg.add("Gadfly")' && julia -e 'Pkg.add("RDatasets")' &&
 RUN julia -e 'Pkg.add("QuantEcon")'
-
-#Add Templates
-USER root
-ADD profile_default /home/econ/.ipython/profile_default
-ADD templates/ /srv/templates/
-RUN chmod a+rX /srv/templates
-USER econ
 
 # Convert notebooks to the current format
 RUN find /home/. -name '*.ipynb' -exec ipython nbconvert --to notebook {} --output {} \;
