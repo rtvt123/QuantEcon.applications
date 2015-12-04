@@ -1,5 +1,5 @@
-# QuantEcon.applications Docker Image (for tmpnb orchestrate.py server & mybinder service)
-# User: econ
+# quantecon.applications Docker Image (for tmpnb orchestrate.py server & mybinder service)
+# User: main
 
 FROM andrewosh/binder-base
 
@@ -21,32 +21,12 @@ RUN echo 'export PATH=$CONDA_DIR/bin:$PATH' > /etc/profile.d/conda.sh && \
     rm Miniconda3-latest-Linux-x86_64.sh && \
     $CONDA_DIR/bin/conda update --yes conda
 
-# We run our docker images with a non-root user as a security precaution.
-# econ is our user
-RUN useradd -m -s /bin/bash econ
-RUN chown -R econ:econ $CONDA_DIR
-
-EXPOSE 8888
-
-USER econ
-ENV HOME /home/econ
-ENV SHELL /bin/bash
-ENV USER econ
-ENV PATH $CONDA_DIR/bin:$PATH
-WORKDIR $HOME
-
-RUN ipython profile create
-
-# Workaround for issue with ADD permissions
-USER root
-# ADD notebooks/ /home/econ/
-RUN chown econ:econ /home/econ -R
-USER econ
+USER main
 
 # Python packages
 RUN conda install --yes pip numpy pandas scikit-learn scikit-image matplotlib scipy seaborn sympy cython patsy statsmodels cloudpickle dill numba bokeh && conda clean -yt
 
-#Install QuantEcon
+#Install Quantecon
 RUN pip install quantecon
 #RUN source activate python2 && pip install quantecon && source deactivate python2
 
@@ -54,4 +34,4 @@ RUN pip install quantecon
 RUN julia -e 'Pkg.add("IJulia")'
 # RUN julia -e 'Pkg.add("PyPlot")' && julia -e 'Pkg.add("Distributions")' && julia -e 'Pkg.add("KernelEstimator")' 
 # julia -e 'Pkg.add("Gadfly")' && julia -e 'Pkg.add("RDatasets")' &&
-# RUN julia -e 'Pkg.add("QuantEcon")'
+# RUN julia -e 'Pkg.add("quantecon")'
