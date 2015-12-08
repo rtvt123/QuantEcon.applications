@@ -1,5 +1,6 @@
 # quantecon.applications Docker Image (for mybinder.org service)
 # User: main
+# Environments: Python3.5 and Julia0.3
 
 FROM andrewosh/binder-base
 
@@ -9,7 +10,7 @@ USER root
 
 #-Update Debian Base-#
 RUN apt-get update -y
-RUN apt-get install -y --no-install-recommends curl ca-certificates
+RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
 
 # Julia dependencies
 RUN apt-get install -y julia libnettle4 && apt-get clean
@@ -20,7 +21,6 @@ USER main
 RUN conda update --yes conda
 RUN conda install --yes python=3.5 anaconda && conda clean -yt
 RUN pip install quantecon
-# RUN source activate python2 && pip install quantecon && source deactivate python2
 
 #-Julia Packages-#
 RUN echo "cacert=/etc/ssl/certs/ca-certificates.crt" > ~/.curlrc
@@ -29,3 +29,4 @@ RUN julia -e 'Pkg.add("IJulia"); using IJulia'
 RUN julia -e 'Pkg.add("PyPlot"); Pkg.checkout("PyPlot"); Pkg.build("PyPlot"); using PyPlot' 
 RUN julia -e 'Pkg.add("Distributions"); using Distributions'
 RUN julia -e 'Pkg.add("KernelEstimator"); using KernelEstimator'
+RUN julia -e 'Pkg.add("QuantEcon"); using QuantEcon'
