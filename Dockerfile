@@ -12,6 +12,14 @@ USER root
 RUN apt-get update -y
 RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
 
+#-Install texlive-#
+RUN apt-get update -y && apt-get install -yq --no-install-recommends \
+	texlive-latex-base \
+    texlive-latex-extra \
+    texlive-fonts-extra \
+    texlive-fonts-recommended \
+    && apt-get clean
+
 # Julia dependencies
 RUN apt-get install -y --no-install-recommends julia libnettle4 && apt-get clean
 
