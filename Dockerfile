@@ -30,3 +30,6 @@ RUN julia -e 'Pkg.add("PyPlot"); Pkg.checkout("PyPlot"); Pkg.build("PyPlot"); us
 RUN julia -e 'Pkg.add("Distributions"); using Distributions'
 RUN julia -e 'Pkg.add("KernelEstimator"); using KernelEstimator'
 RUN julia -e 'Pkg.add("QuantEcon"); using QuantEcon'
+RUN julia -e 'Pkg.add("Gadfly"); using Gadfly'
+RUN julia -e 'Pkg.add("Optim"); using Optim'
+RUN julia -e 'Pkg.add("Grid"); using Grid'
