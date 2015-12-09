@@ -13,16 +13,24 @@ RUN apt-get update -y
 RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
 
 # Julia dependencies
-RUN apt-get install -y julia libnettle4 && apt-get clean
+RUN apt-get install -y --no-install-recommends julia libnettle4 && apt-get clean
 
-#-Install a Python3.5 Anaconda Distributions-#
-echo 'export PATH=/home/main/anaconda/bin:$PATH'  >> ~/.bash_profile
-RUN conda update --yes conda
-RUN conda install --yes python=3.5 && conda clean --packages --yes && conda install --yes anaconda && conda clean -yt
-RUN pip install quantecon
-
+#-Re-Install Conda for Python3.5 Anaconda Distributions-#
+RUN rm -r /home/main/anaconda
 
 USER main
+
+#-NOTE: $HOME/anaconda/envs/python3 is the location anaconda is installed in andrewosh/binder-base
+#-If this get's updated then the following instructions will break. 
+#-TODO: This step can be removed once the base image is upgraded to python=3.5
+
+RUN wget --quiet https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda3-2.4.1-Linux-x86_64.sh
+RUN bash Anaconda3-2.4.1-Linux-x86_64.sh -b && rm Anaconda3-2.4.1-Linux-x86_64.sh
+ENV PATH $HOME/anaconda3/bin:$PATH
+RUN /bin/bash -c "ipython kernelspec install-self --user"
+
+#-Install Pip Packages
+RUN pip install quantecon
 
 #-Julia Packages-#
 RUN echo "cacert=/etc/ssl/certs/ca-certificates.crt" > ~/.curlrc
