@@ -1,9 +1,11 @@
 # QuantEcon.applications
-A repository that houses example code, applications and teaching material related to QuantEcon
+This is a repository that houses example code, applications and teaching material related to [QuantEcon](http://quant-econ.net)
 
 # MyBinder Instance
 
+To run a live instance of this repository you can click on the MyBinder badge below.
+You can run the Python and Julia notebooks in the same environment.
+
 [![Binder](http://mybinder.org/badge.svg)](http://mybinder.org/repo/QuantEcon/QuantEcon.applications)
 
-# TODO
-1. Update /_scripts_/ to run over new topic structure
+If you come across any issues. Please add them to the issue tracker. 
