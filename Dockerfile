@@ -15,12 +15,12 @@ RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
 # Julia dependencies
 RUN apt-get install -y julia libnettle4 && apt-get clean
 
-USER main
-
-#-Install Python3.5 Anaconda Distributions-#
+#-Install a Python3.5 Anaconda Distributions-#
 RUN conda update --yes conda
-RUN conda install --yes python=3.5 anaconda && conda clean -yt
+RUN conda install --yes python=3.5 && conda clean --packages && conda install anaconda && conda clean -yt
 RUN pip install quantecon
+
+USER main
 
 #-Julia Packages-#
 RUN echo "cacert=/etc/ssl/certs/ca-certificates.crt" > ~/.curlrc
