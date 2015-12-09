@@ -16,9 +16,11 @@ RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
 RUN apt-get install -y julia libnettle4 && apt-get clean
 
 #-Install a Python3.5 Anaconda Distributions-#
+echo 'export PATH=/home/main/anaconda/bin:$PATH'  >> ~/.bash_profile
 RUN conda update --yes conda
 RUN conda install --yes python=3.5 && conda clean --packages --yes && conda install --yes anaconda && conda clean -yt
 RUN pip install quantecon
+
 
 USER main
 
