@@ -6,7 +6,7 @@ from __future__ import division  # Omit for Python 3.x
 import numpy as np
 
 class Solow:
-    """
+    r"""
     Implements the Solow growth model with update rule
 
     .. math::
