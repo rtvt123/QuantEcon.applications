@@ -93,7 +93,7 @@ plt.savefig('example_averages.png')
 from scipy.stats import norm
 
 #using quaterly data
-alpha_q = (1-(1-alpha)**3)
+alpha_q = (1-(1-alpha)**3)   # alpha is monthly and alpha_q is quarterly
 gamma = 1.
 
 logw_dist = norm(np.log(20.),1)
@@ -103,7 +103,7 @@ w = np.linspace(0.,175,201)# wage grid
 cdf = logw_dist.cdf(np.log(w))
 pdf = cdf[1:]-cdf[:-1]
 pdf /= pdf.sum()
-w = (w[1:] + w[:1])/2
+w = (w[1:] + w[:-1])/2
 
 #Find the quilibirum
 LME = LakeModel_Equilibrium(alpha_q,gamma,0.99,2.00,pdf,w)
