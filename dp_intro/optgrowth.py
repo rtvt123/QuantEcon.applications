@@ -1,110 +1,141 @@
 """
 Filename: optgrowth.py
-
-Authors: John Stachurski and Thomas Sargent
+Authors: John Stachurski, Thomas Sargent
 
 Solving the optimal growth problem via value function iteration.
-
 """
-from __future__ import division  # Omit for Python 3.x
-from textwrap import dedent
+
 import numpy as np
 from scipy.optimize import fminbound
 from scipy import interp
+from joblib import Memory
+from quantecon import compute_fixed_point
+import matplotlib.pyplot as plt
 
+# For persistent caching 
+memory = Memory(cachedir='/tmp/joblib_cache')
 
-class GrowthModel(object):
+def bellman_operator(w, grid, alpha, beta, delta, Tw=None, compute_policy=0):
     """
-
-    This class defines the primitives representing the growth model.
+    The approximate Bellman operator, which computes and returns the
+    updated value function Tw on the grid points.  An array to store
+    the new set of values Tw is optionally supplied (to avoid having to
+    allocate new arrays at each iteration).  If supplied, any existing data in 
+    Tw will be overwritten.
 
     Parameters
     ----------
-    f : function, optional(default=k**.65)
-        The production function; the default is the Cobb-Douglas
-        production function with power of .65
-    beta : scalar(int), optional(default=.95)
-        The utility discounting parameter
-    u : function, optional(default=np.log)
-        The utility function.  Default is log utility
-    grid_max : scalar(int), optional(default=2)
-        The maximum grid value
-    grid_size : scalar(int), optional(default=150)
-        The size of grid to use.
-
-    Attributes
-    ----------
-    f, beta, u  : see Parameters
+    w : array_like(float, ndim=1)
+        The value of the input function on different grid points
     grid : array_like(float, ndim=1)
-        The grid over savings.
+        The set of grid points
+    alpha : scalar
+        The productivity parameter
+    beta : scalar
+        The discount factor
+    delta : scalar
+        The depreciation parameter
+    Tw : array_like(float, ndim=1) optional (default=None)
+        Array to write output values to
+    compute_policy : Boolean, optional (default=False)
+        Whether or not to compute policy function
 
     """
-    def __init__(self, f=lambda k: k**0.65, beta=0.95, u=np.log,
-                 grid_max=2, grid_size=150):
+    # === Apply linear interpolation to w === #
+    w_func = lambda x: interp(x, grid, w)
 
-        self.u, self.f, self.beta = u, f, beta
+    # == Initialize Tw if necessary == #
+    if Tw is None:
+        Tw = np.empty(len(w))
+
+    if compute_policy:
+        sigma = np.empty(len(w))
+
+    # == set Tw[i] = max_c { u(c) + beta w(f(k_i) + (1 - delta)k - c)} == #
+    for i, k in enumerate(grid):
+        y = k**alpha + (1 - delta) * k  # Available capital
+        def objective(c):
+            return - np.log(c) - beta * w_func(y - c)
+        c_star = fminbound(objective, 1e-10, y)
+        if compute_policy:
+            sigma[i] = c_star
+        Tw[i] = - objective(c_star)
+
+    if compute_policy:
+        return Tw, sigma
+    else:
+        return Tw
+
+
+@memory.cache
+def compute_opt_growth_vf(alpha, beta, delta, grid):
+    """
+    Compute the value function by iterating on the Bellman operator.
+    The hard work is done by QuantEcon's compute_fixed_point function.
+    """
+    Tw = np.empty(len(grid))
+    initial_w = 5 * np.log(grid) - 25
+
+    v_star = compute_fixed_point(bellman_operator, 
+            initial_w, 
+            1e-3, # error_tol
+            50,   # max_iter
+            True, # verbose
+            5,    # print_skip
+            grid,
+            alpha,
+            beta,
+            delta,
+            Tw=Tw,
+            compute_policy=False)
+
+    return v_star
+
+
+
+
+class GrowthModel:
+    """
+    A simple class to store parameters and compute solutions.
+    """
+    def __init__(self, alpha=0.65, beta=0.95, delta=1, grid_max=2, grid_size=150):
+
+        self.alpha, self.beta, self.delta = alpha, beta, delta
         self.grid = np.linspace(1e-6, grid_max, grid_size)
 
-    def __repr__(self):
-        m = "GrowthModel(beta={b}, grid_max={gm}, grid_size={gs})"
-        return m.format(b=self.beta, gm=self.grid.max(), gs=self.grid.size)
+    def compute_value_function(self, show_plot=False):
+        v_star = compute_opt_growth_vf(self.alpha, 
+                                    self.beta, self.delta, self.grid)
 
-    def __str__(self):
-        m = """\
-        GrowthModel:
-          - beta (discount factor)                             : {b}
-          - u (utility function)                               : {u}
-          - f (production function)                            : {f}
-          - grid bounds (bounds for grid over savings values)  : ({gl}, {gm})
-          - grid points (number of points in grid for savings) : {gs}
+        if show_plot:
+            fig, ax = plt.subplots()
+            ax.plot(self.grid, v_star, lw=2, alpha=0.6, label='value function')
+            ax.legend(loc='lower right')
+            plt.show()
+
+        return v_star
+
+    def compute_greedy(self, w=None, show_plot=False):
         """
-        return dedent(m.format(b=self.beta, u=self.u, f=self.f,
-                               gl=self.grid.min(), gm=self.grid.max(),
-                               gs=self.grid.size))
-
-    def bellman_operator(self, w, compute_policy=False):
+        Compute the w-greedy policy on the grid points given w
+        (the value of the input function on grid points).  If w is not
+        supplied, use the approximate optimal value function.
         """
-        The approximate Bellman operator, which computes and returns the
-        updated value function Tw on the grid points.
+        if w is None:
+            w = self.compute_value_function()
+        Tw, sigma = bellman_operator(w, 
+                self.grid,  
+                self.alpha,  
+                self.beta,  
+                self.delta,  
+                compute_policy=True)
 
-        Parameters
-        ----------
-        w : array_like(float, ndim=1)
-            The value of the input function on different grid points
-        compute_policy : Boolean, optional(default=False)
-            Whether or not to compute policy function
+        if show_plot:
+            fig, ax = plt.subplots()
+            ax.plot(self.grid, sigma, lw=2, alpha=0.6, label='policy function')
+            ax.legend(loc='lower right')
+            plt.show()
 
-        """
-        # === Apply linear interpolation to w === #
-        Aw = lambda x: interp(x, self.grid, w)
-
-        if compute_policy:
-            sigma = np.empty(len(w))
-
-        # == set Tw[i] equal to max_c { u(c) + beta w(f(k_i) - c)} == #
-        Tw = np.empty(len(w))
-        for i, k in enumerate(self.grid):
-            objective = lambda c: - self.u(c) - self.beta * Aw(self.f(k) - c)
-            c_star = fminbound(objective, 1e-6, self.f(k))
-            if compute_policy:
-                # sigma[i] = argmax_c { u(c) + beta w(f(k_i) - c)}
-                sigma[i] = c_star
-            Tw[i] = - objective(c_star)
-
-        if compute_policy:
-            return Tw, sigma
-        else:
-            return Tw
-
-    def compute_greedy(self, w):
-        """
-        Compute the w-greedy policy on the grid points.
-
-        Parameters
-        ----------
-        w : array_like(float, ndim=1)
-            The value of the input function on different grid points
-
-        """
-        Tw, sigma = self.bellman_operator(w, compute_policy=True)
         return sigma
+
+
