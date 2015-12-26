@@ -74,13 +74,14 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
 
 
 @memory.cache
-def compute_opt_growth_vf(grid, beta, u, f, shocks):
+def compute_opt_growth_vf(grid, beta, u, f, shocks, initial_w=None):
     """
     Compute the value function by iterating on the Bellman operator.
     The hard work is done by QuantEcon's compute_fixed_point function.
     """
     Tw = np.empty(len(grid))
-    initial_w = 5 * np.log(grid) - 25
+    if initial_w is None:
+        initial_w =u(grid) 
 
     v_star = compute_fixed_point(bellman_operator, 
             initial_w, 
@@ -96,7 +97,4 @@ def compute_opt_growth_vf(grid, beta, u, f, shocks):
             Tw=Tw,
             compute_policy=False)
     return v_star
-
-
-
 

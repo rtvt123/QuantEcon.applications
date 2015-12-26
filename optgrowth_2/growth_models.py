@@ -23,9 +23,9 @@ class LogLinearGrowthModel:
             grid_max=3, 
             grid_size=150):
 
-        self.alpha, self.beta = alpha, beta
+        self.alpha, self.beta, self.mu, self.sigma = alpha, beta, mu, sigma
         self.grid = np.linspace(1e-6, grid_max, grid_size)
-        self.shocks = np.exp(np.random.randn(250))
+        self.shocks = np.exp(mu + sigma * np.random.randn(250))
 
     def compute_value_function(self, show_plot=False):
         v_star = compute_opt_growth_vf(self.grid, 
