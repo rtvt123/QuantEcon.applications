@@ -1,12 +1,12 @@
 """
 Filename: optgrowth_v0.py
-Authors: John Stachurski and Thomas Sargent
+Authors: John Stachurski and Tom Sargent
 
 A first pass at solving the optimal growth problem via value function
 iteration.  A more general version is provided in optgrowth.py.
 
 """
-from __future__ import division  # Omit for Python 3.x
+from __future__ import division  # Not needed for Python 3.x
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import log
