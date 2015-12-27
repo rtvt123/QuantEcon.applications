@@ -11,13 +11,7 @@ described in
 import numpy as np
 from scipy.optimize import fminbound
 from scipy import interp
-from joblib import Memory
-from quantecon import compute_fixed_point
 
-# For persistent caching.  Here we're writing to /tmp, which only 
-# persists to the next reboot.  Change to the local dir to get a more
-# permanent cache.
-memory = Memory(cachedir='/tmp/joblib_cache')
 
 def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
     """
@@ -58,7 +52,7 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
     if compute_policy:
         sigma = np.empty(len(w))
 
-    # == set Tw[i] = max_c { u(c) + beta E w(f(y  - c))} == #
+    # == set Tw[i] = max_c { u(c) + beta E w(f(y  - c) z)} == #
     for i, y in enumerate(grid):
         def objective(c):
             return - u(c) - beta * np.mean(w_func(f(y - c) * shocks))
@@ -73,28 +67,4 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
         return Tw
 
 
-@memory.cache
-def compute_opt_growth_vf(grid, beta, u, f, shocks, initial_w=None):
-    """
-    Compute the value function by iterating on the Bellman operator.
-    The hard work is done by QuantEcon's compute_fixed_point function.
-    """
-    Tw = np.empty(len(grid))
-    if initial_w is None:
-        initial_w =u(grid) 
-
-    v_star = compute_fixed_point(bellman_operator, 
-            initial_w, 
-            1e-3, # error_tol
-            50,   # max_iter
-            True, # verbose
-            5,    # print_skip
-            grid,
-            beta,
-            u,
-            f,
-            shocks,
-            Tw=Tw,
-            compute_policy=False)
-    return v_star
 
