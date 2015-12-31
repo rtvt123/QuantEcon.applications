@@ -11,10 +11,7 @@ from optgrowth import bellman_operator
 from quantecon import compute_fixed_point
 from joblib import Memory
 
-# For persistent caching.  Here we're writing to /tmp, which only 
-# persists to the next reboot.  Change to the local dir to get a more
-# permanent cache.
-memory = Memory(cachedir='/tmp/joblib_cache')
+memory = Memory(cachedir='./joblib_cache')
 
 @memory.cache
 def compute_log_linear_value_function(grid, beta, alpha, shocks):
@@ -27,10 +24,10 @@ def compute_log_linear_value_function(grid, beta, alpha, shocks):
 
     v_star = compute_fixed_point(bellman_operator, 
             initial_w, 
-            1e-4, # error_tol
+            1e-4,  # error_tol
             100,   # max_iter
-            True, # verbose
-            5,    # print_skip
+            True,  # verbose
+            5,     # print_skip
             grid,
             beta,
             np.log,
