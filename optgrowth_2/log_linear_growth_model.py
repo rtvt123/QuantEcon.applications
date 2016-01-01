@@ -1,8 +1,9 @@
 """
-Filename: growth_models.py
+Filename: log_linear_growth_model.py
 Authors: John Stachurski, Thomas Sargent
 
-Some growth models, wrapped as classes.  For use with the optgrowth.py module.
+The log linear growth model, wrapped as classes.  For use with the
+optgrowth.py module.
 """
 
 import numpy as np
@@ -14,10 +15,10 @@ from joblib import Memory
 memory = Memory(cachedir='./joblib_cache')
 
 @memory.cache
-def compute_log_linear_value_function(grid, beta, alpha, shocks):
+def compute_value_function_cached(grid, beta, alpha, shocks):
     """
     Compute the value function by iterating on the Bellman operator.
-    The hard work is done by QuantEcon's compute_fixed_point function.
+    The work is done by QuantEcon's compute_fixed_point function.
     """
     Tw = np.empty(len(grid))
     initial_w = 5 * np.log(grid) - 25
@@ -47,8 +48,8 @@ class LogLinearGrowthModel:
             alpha=0.65,         # Productivity parameter
             beta=0.95,          # Discount factor
             mu=1,               # First parameter in lognorm(mu, sigma)
-            sigma=0.2,          # Second parameter in lognorm(mu, sigma)
-            grid_max=3, 
+            sigma=0.1,          # Second parameter in lognorm(mu, sigma)
+            grid_max=8, 
             grid_size=150):
 
         self.alpha, self.beta, self.mu, self.sigma = alpha, beta, mu, sigma
@@ -56,11 +57,13 @@ class LogLinearGrowthModel:
         self.shocks = np.exp(mu + sigma * np.random.randn(250))
 
     def compute_value_function(self, show_plot=False):
-        v_star = compute_log_linear_value_function(self.grid, 
+        """
+        Calls compute_value_function_cached and optionally adds a plot.
+        """
+        v_star = compute_value_function_cached(self.grid, 
                                                    self.beta,
                                                    self.alpha,
                                                    self.shocks)
-
         if show_plot:
             fig, ax = plt.subplots()
             ax.plot(self.grid, v_star, lw=2, alpha=0.6, label='value function')
@@ -91,7 +94,7 @@ class LogLinearGrowthModel:
             ax.plot(self.grid, sigma, lw=2, alpha=0.6, label='approximate policy function')
             cstar = (1 - self.alpha * self.beta) * self.grid
             ax.plot(self.grid, cstar, lw=2, alpha=0.6, label='true policy function')
-            ax.legend(loc='lower right')
+            ax.legend(loc='upper left')
             plt.show()
 
         return sigma
