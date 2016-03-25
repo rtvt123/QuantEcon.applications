@@ -18,9 +18,13 @@ beta = 0.96
 
 
 def r_to_w(r):
-    return A * (1 - alpha) * (alpha / (1 + r))**(alpha / (1 - alpha))
+    return A * (1 - alpha) * (alpha / (1 +r))**(alpha / (1 - alpha))
 
 def rd(K):
+    """
+    Inverse demand curve for capital.  The interest rate associated with a
+    given demand for capital K.
+    """
     return A * alpha * (N / K)**(1 - alpha)
 
 
@@ -57,7 +61,7 @@ am_ddp = DiscreteDP(am.R, am.Q, am.beta)
 
 # Create a grid of r values at which to compute demand and supply of capital
 num_points = 20
-r_vals = np.linspace(0.0, 0.04, num_points)
+r_vals = np.linspace(0.005, 0.04, num_points)
 
 # Compute supply of capital
 k_vals = np.empty(num_points)
