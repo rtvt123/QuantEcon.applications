@@ -24,14 +24,14 @@ class Solow:
         self.k = k
         
 
-    def h(self,x):
+    def h(self):
         "Evaluate the h function"
         temp = self.s * self.z * self.k**self.alpha + self.k * (1 - self.d)
         return temp / (1 + self.n)
 
     def update(self):
         "Update the current state (i.e., the capital stock)."
-        self.k =  self.h(self.k)
+        self.k =  self.h()
         
     def steady_state(self):
          "Compute the steady state value of capital."
