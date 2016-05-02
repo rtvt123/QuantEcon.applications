@@ -1,13 +1,13 @@
 """
 Filename: asset_pricing.py
 
-Authors: David Evans, John Stachurski and Thomas J. Sargent
+Computes asset prices in a Lucas endowment economy when the endowment obeys
+geometric growth driven by a finite state Markov chain.  That is,
 
-Computes asset prices in an endowment economy when the endowment obeys
-geometric growth driven by a finite state Markov chain.  The transition
-matrix of the Markov chain is P, and the set of states is s.  The
-discount factor is beta, and gamma is the coefficient of relative risk
-aversion in the household's utility function.
+.. math::
+    d_{t+1} = X_{t+1} d_t
+
+where :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
 
 References
 ----------
@@ -15,202 +15,169 @@ References
     http://quant-econ.net/py/markov_asset.html
 
 """
-from textwrap import dedent
 import numpy as np
 from numpy.linalg import solve
 
 
-class AssetPrices(object):
+class AssetPriceModel:
     r"""
-    A class to compute asset prices when the endowment follows a finite
-    Markov chain.
+    A class that stores the primitives of the asset pricing model, plus a few
+    useful matrices as attributes
 
     Parameters
     ----------
     beta : scalar, float
         Discount factor
-    P : array_like(float)
-        Transition matrix
-    s : array_like(float)
-        Growth rate of consumption
+    mc : MarkovChain
+        Contains the transition matrix and set of state values for the state
+        proces
     gamma : scalar(float)
         Coefficient of risk aversion
 
     Attributes
     ----------
-    beta, P, s, gamma : see Parameters
-    n : scalar(int)
-        The number of rows in P
+    beta, mc, gamm : as above
 
-    Examples
-    --------
+    P_tilde : ndarray
+        The matrix :math:`P(x, y) y^(1 - \gamma)`
 
-    >>> n = 5
-    >>> P = 0.0125 * np.ones((n, n))
-    >>> P += np.diag(0.95 - 0.0125 * np.ones(5))
-    >>> s = np.array([1.05, 1.025, 1.0, 0.975, 0.95])
-    >>> gamma = 2.0
-    >>> beta = 0.94
-    >>> ap = AssetPrices(beta, P, s, gamma)
-    >>> zeta = 1.0
-    >>> v = ap.tree_price()
-    >>> print("Lucas Tree Prices: %s" % v)
-    Lucas Tree Prices: [ 12.72221763  14.72515002  17.57142236
-    21.93570661  29.47401578]
-
-    >>> v_consol = ap.consol_price(zeta)
-    >>> print("Consol Bond Prices: %s" % v_consol)
-    Consol Bond Prices:  [  87.56860139  109.25108965  148.67554548
-    242.55144082  753.87100476]
-
-    >>> p_s = 150.0
-    >>> w_bar, w_bars = ap.call_option(zeta, p_s, T = [10,20,30])
-    >>> w_bar
-    array([  64.30843769,   80.05179282,  108.67734545,  176.83933585,
-        603.87100476])
-    >>> w_bars
-    {10: array([  44.79815889,   50.81409953,   58.61386544,
-         115.69837047, 603.87100476]),
-     20: array([  56.73357192,   68.51905592,   86.69038119,
-         138.45961867, 603.87100476]),
-     30: array([  60.62653565,   74.67608505,   98.38386204,
-          153.80497466, 603.87100476])}
+    P_tilde : ndarray
+        The matrix :math:`P(x, y) y^(\gamma)`
 
     """
-    def __init__(self, beta, P, s, gamma):
-        self.beta, self.gamma = beta, gamma
-        self.P, self.s = P, s
-        self.n = self.P.shape[0]
-
-    def __repr__(self):
-        m = "AssetPrices(beta={b:g}, P='{n:g} by {n:g}', s={s}, gamma={g:g})"
-        return m.format(b=self.beta, n=self.P.shape[0], s=self.s, g=self.gamma)
-
-    def __str__(self):
-        m = """\
-        AssetPrices (Merha and Prescott, 1985):
-          - beta (discount factor)               : {b:g}
-          - P (Transition matrix)                : {n:g} by {n:g}
-          - s (growth rate of consumption)       : {s:s}
-          - gamma (Coefficient of risk aversion) : {g:g}
-        """
-
-        return dedent(m.format(b=self.beta, n=self.P.shape[0], s=repr(self.s),
-                               g=self.gamma))
+    def __init__(self, beta, mc, gamma):
+        self.beta, self.mc, self.gamma = beta, mc, gamma
+        self.n = self.mc.P.shape[0]
 
     @property
     def P_tilde(self):
-        P, s, gamma = self.P, self.s, self.gamma
-        return P * s**(1.0-gamma)  # using broadcasting
+        P = self.mc.P
+        y = self.mc.state_values
+        return P * y**(1 - self.gamma)  # using broadcasting
 
     @property
     def P_check(self):
-        P, s, gamma = self.P, self.s, self.gamma
-        return P * s**(-gamma)  # using broadcasting
+        P = self.mc.P
+        y = self.mc.state_values
+        return P * y**(-self.gamma)  # using broadcasting
 
-    def tree_price(self):
-        """
-        Computes the function v such that the price of the lucas tree is
-        v(lambda)C_t
 
-        Returns
-        -------
-        v : array_like(float)
-            Lucas tree prices
 
-        """
-        # == Simplify names == #
-        beta = self.beta
+def tree_price(apm):
+    """
+    Computes the price-dividend ratio of the Lucas tree.
 
-        # == Compute v == #
-        P_tilde = self.P_tilde
-        I = np.identity(self.n)
-        O = np.ones(self.n)
-        v = beta * solve(I - beta * P_tilde, P_tilde.dot(O))
+    Parameters
+    ----------
+    apm: AssetPriceModel
+        An instance of AssetPriceModel containing primitives
 
-        return v
+    Returns
+    -------
+    v : array_like(float)
+        Lucas tree price-dividend ratio
 
-    def consol_price(self, zeta):
-        """
-        Computes price of a consol bond with payoff zeta
+    """
+    # == Simplify names == #
+    beta = apm.beta
+    P_tilde = apm.P_tilde
 
-        Parameters
-        ----------
-        zeta : scalar(float)
-            Coupon of the console
+    # == Compute v == #
+    I = np.identity(apm.n)
+    O = np.ones(apm.n)
+    v = beta * solve(I - beta * P_tilde, P_tilde @ O)
 
-        Returns
-        -------
-        p_bar : array_like(float)
-            Console bond prices
+    return v
 
-        """
-        # == Simplify names == #
-        beta = self.beta
 
-        # == Compute price == #
-        P_check = self.P_check
-        I = np.identity(self.n)
-        O = np.ones(self.n)
-        p_bar = beta * solve(I - beta * P_check, P_check.dot(zeta * O))
+def consol_price(apm, zeta):
+    """
+    Computes price of a consol bond with payoff zeta
 
-        return p_bar
+    Parameters
+    ----------
+    apm: AssetPriceModel
+        An instance of AssetPriceModel containing primitives
 
-    def call_option(self, zeta, p_s, T=[], epsilon=1e-8):
-        """
-        Computes price of a call option on a consol bond, both finite
-        and infinite horizon
+    zeta : scalar(float)
+        Coupon of the console
 
-        Parameters
-        ----------
-        zeta : scalar(float)
-            Coupon of the console
+    Returns
+    -------
+    p_bar : array_like(float)
+        Console bond prices
 
-        p_s : scalar(float)
-            Strike price
+    """
+    # == Simplify names == #
+    beta = apm.beta
 
-        T : iterable(integers)
-            Length of option in the finite horizon case
+    # == Compute price == #
+    P_check = apm.P_check
+    I = np.identity(apm.n)
+    O = np.ones(apm.n)
+    p_bar = beta * solve(I - beta * P_check, P_check.dot(zeta * O))
 
-        epsilon : scalar(float), optional(default=1e-8)
-            Tolerance for infinite horizon problem
+    return p_bar
 
-        Returns
-        -------
-        w_bar : array_like(float)
-            Infinite horizon call option prices
 
-        w_bars : dict
-            A dictionary of key-value pairs {t: vec}, where t is one of
-            the dates in the list T and vec is the option prices at that
-            date
+def call_option(apm, zeta, p_s, T=[], epsilon=1e-8):
+    """
+    Computes price of a call option on a consol bond, both finite
+    and infinite horizon
 
-        """
-        # == Simplify names, initialize variables == #
-        beta = self.beta
-        P_check = self.P_check
+    Parameters
+    ----------
+    apm: AssetPriceModel
+        An instance of AssetPriceModel containing primitives
 
-        # == Compute consol price == #
-        v_bar = self.consol_price(zeta)
+    zeta : scalar(float)
+        Coupon of the console
 
-        # == Compute option price == #
-        w_bar = np.zeros(self.n)
-        error = epsilon + 1
-        t = 0
-        w_bars = {}
-        while error > epsilon:
-            if t in T:
-                w_bars[t] = w_bar
+    p_s : scalar(float)
+        Strike price
 
-            # == Maximize across columns == #
-            to_stack = (beta*P_check.dot(w_bar), v_bar-p_s)
-            w_bar_new = np.amax(np.vstack(to_stack), axis=0)
+    T : iterable(integers)
+        Length of option in the finite horizon case
 
-            # == Find maximal difference of each component == #
-            error = np.amax(np.abs(w_bar-w_bar_new))
+    epsilon : scalar(float), optional(default=1e-8)
+        Tolerance for infinite horizon problem
 
-            # == Update == #
-            w_bar = w_bar_new
-            t += 1
+    Returns
+    -------
+    w_bar : array_like(float)
+        Infinite horizon call option prices
 
-        return w_bar, w_bars
+    w_bars : dict
+        A dictionary of key-value pairs {t: vec}, where t is one of
+        the dates in the list T and vec is the option prices at that
+        date
+
+    """
+    # == Simplify names, initialize variables == #
+    beta = apm.beta
+    P_check = apm.P_check
+
+    # == Compute consol price == #
+    v_bar = consol_price(apm, zeta)
+
+    # == Compute option price == #
+    w_bar = np.zeros(apm.n)
+    error = epsilon + 1
+    t = 0
+    w_bars = {}
+    while error > epsilon:
+        if t in T:
+            w_bars[t] = w_bar
+
+        # == Maximize across columns == #
+        to_stack = (beta*P_check.dot(w_bar), v_bar-p_s)
+        w_bar_new = np.amax(np.vstack(to_stack), axis=0)
+
+        # == Find maximal difference of each component == #
+        error = np.amax(np.abs(w_bar-w_bar_new))
+
+        # == Update == #
+        w_bar = w_bar_new
+        t += 1
+
+    return w_bar, w_bars
