@@ -1,5 +1,5 @@
 """
-Tests for quantecon.models.lucastree
+Tests for lucastree
 
 @author : Spencer Lyon
 @date : 2014-08-05 09:15:45
