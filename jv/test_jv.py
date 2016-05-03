@@ -9,7 +9,7 @@ from __future__ import division
 import sys
 import unittest
 from nose.plugins.skip import SkipTest
-from quantecon.models import JvWorker
+from jv import JvWorker
 from quantecon import compute_fixed_point
 from quantecon.tests import get_h5_data_file, write_array, max_abs_diff
 
