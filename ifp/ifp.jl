@@ -14,13 +14,11 @@ http://quant-econ.net/jl/ifp.html
 
 =#
 using Interpolations
-using Optim: optimize
+using Optim
 
-abstract AbstractConsumerProblem
-
-# default utility and marginal utility functions
-u(::AbstractConsumerProblem, x) = log(x)
-du(::AbstractConsumerProblem, x) = 1 ./ x
+# utility and marginal utility functions
+u(x) = log(x)
+du(x) = 1 ./ x
 
 """
 Income fluctuation problem
@@ -36,7 +34,7 @@ Income fluctuation problem
 - `asset_grid::LinSpace{Float64}` : Grid of asset values
 
 """
-type ConsumerProblem <: AbstractConsumerProblem
+type ConsumerProblem
     r::Float64
     R::Float64
     bet::Float64
@@ -107,7 +105,7 @@ function bellman_operator!(cp::ConsumerProblem, V::Matrix, out::Matrix;
                 for j in z_idx
                     y += vf[R*a+z-c, j] * Pi[i_z, j]
                 end
-                return -u(cp, c)  - bet * y
+                return -u(c)  - bet * y
             end
 
             res = optimize(obj, opt_lb, R.*a.+z.+b)
@@ -187,11 +185,12 @@ function coleman_operator!(cp::ConsumerProblem, c::Matrix, out::Matrix)
         for (i_a, a) in enumerate(asset_grid)
             function h(t)
                 cf!(R*a+z-t, vals)  # update vals
-                expectation = dot(du(cp, vals), vec(Pi[i_z, :]))
-                return abs(du(cp, t) - max(gam * expectation, du(cp, R*a+z+b)))
+                expectation = dot(du(vals), vec(Pi[i_z, :]))
+                return abs(du(t) - max(gam * expectation, du(R*a+z+b)))
             end
             opt_ub = R*a + z + b  # addresses issue #8 on github
-            res = optimize(h, min(opt_lb, opt_ub - 1e-2), opt_ub, method=:brent)
+            res = optimize(h, min(opt_lb, opt_ub - 1e-2), opt_ub,
+                           method=Optim.Brent())
             out[i_a, i_z] = res.minimum
         end
     end
@@ -220,7 +219,7 @@ function init_values(cp::ConsumerProblem)
         for (i_a, a) in enumerate(asset_grid)
             c_max = R*a + z + b
             c[i_a, i_z] = c_max
-            V[i_a, i_z] = u(cp, c_max) ./ (1 - bet)
+            V[i_a, i_z] = u(c_max) ./ (1 - bet)
         end
     end
 
