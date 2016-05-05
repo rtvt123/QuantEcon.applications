@@ -13,75 +13,59 @@ References
 http://quant-econ.net/jl/ifp.html
 
 =#
-using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
-using Optim: optimize
+using Interpolations
+using Optim
 
+# utility and marginal utility functions
+u(x) = log(x)
+du(x) = 1 ./ x
 
 """
 Income fluctuation problem
 
 ##### Fields
 
-- `u::Function` : Utility `function`
-- `du::Function` : Marginal utility `function`
-- `r::Real` : Strictly positive interest rate
-- `R::Real` : The interest rate plus 1 (strictly greater than 1)
-- `bet::Real` : Discount rate in (0, 1)
-- `b::Real` :  The borrowing constraint
-- `Pi::Matrix` : Transition matrix for `z`
-- `z_vals::Vector` : Levels of productivity
-- `asset_grid::AbstractVector` : Grid of asset values
+- `r::Float64` : Strictly positive interest rate
+- `R::Float64` : The interest rate plus 1 (strictly greater than 1)
+- `bet::Float64` : Discount rate in (0, 1)
+- `b::Float64` :  The borrowing constraint
+- `Pi::Matrix{Floa64}` : Transition matrix for `z`
+- `z_vals::Vector{Float64}` : Levels of productivity
+- `asset_grid::LinSpace{Float64}` : Grid of asset values
+
 """
 type ConsumerProblem
-    u::Function
-    du::Function
-    r::Real
-    R::Real
-    bet::Real
-    b::Real
-    Pi::Matrix
-    z_vals::Vector
-    asset_grid::AbstractVector
+    r::Float64
+    R::Float64
+    bet::Float64
+    b::Float64
+    Pi::Matrix{Float64}
+    z_vals::Vector{Float64}
+    asset_grid::LinSpace{Float64}
 end
 
-"Marginal utility for log utility function"
-default_du{T <: Real}(x::T) = 1.0 / x
-
-"""
-Constructor with default values for `ConsumerProblem`
-
-##### Arguments
-
-- `r::Real(0.01)` : Strictly positive interest rate
-- `bet::Real(0.96)` : Discount rate in (0, 1)
-- `Pi::Matrix{Float64}([0.6 0.4; 0.05 0.95])` : Transition matrix for `z`
-- `z_vals::Vector{Float64}([0.5, 1.0])` : Levels of productivity
-- `b::Real(0.0)` : Borrowing constraint
-- `grid_max::Real(16)` : Maximum in grid for asset holdings
-- `grid_size::Int(50)` : Number of points in grid for asset holdings
-- `u::Function(log)` : Utility `function`
-- `du::Function(x->1/x)` : Marginal utility `function`
-
-##### Notes
-
-There is also a version of this function that accepts keyword arguments for
-each parameter.
-
-"""
-function ConsumerProblem(r=0.01, bet=0.96, Pi=[0.6 0.4; 0.05 0.95],
-                         z_vals=[0.5, 1.0], b=0.0, grid_max=16, grid_size=50,
-                         u=log, du=default_du)
+function ConsumerProblem(;r=0.01, bet=0.96, Pi=[0.6 0.4; 0.05 0.95],
+                         z_vals=[0.5, 1.0], b=0.0, grid_max=16, grid_size=50)
     R = 1 + r
-    asset_grid = linspace_range(-b, grid_max, grid_size)
+    asset_grid = linspace(-b, grid_max, grid_size)
 
-    ConsumerProblem(u, du, r, R, bet, b, Pi, z_vals, asset_grid)
+    ConsumerProblem(r, R, bet, b, Pi, z_vals, asset_grid)
 end
 
-# make kwarg version
-function ConsumerProblem(;r=0.01, beta=0.96, Pi=[0.6 0.4; 0.05 0.95],
-                         z_vals=[0.5, 1.0], b=0.0, grid_max=16, grid_size=50,
-                         u=log, du=x -> 1./x)
-    ConsumerProblem(r, beta, Pi, z_vals, b, grid_max, grid_size, u, du)
+"""
+Given a matrix of size `(length(cp.asset_grid), length(cp.z_vals))`, construct
+an interpolation object that does linear interpolation in the asset dimension
+and has a lookup table in the z dimension
+"""
+function Interpolations.interpolate(cp::ConsumerProblem, x::AbstractMatrix)
+    sz = (length(cp.asset_grid), length(cp.z_vals))
+    if size(x) != sz
+        msg = "x must have dimensions $(sz)"
+        throw(DimensionMismatch(msg))
+    end
+
+    itp = interpolate(x, (BSpline(Linear()), NoInterp()), OnGrid())
+    scale(itp, cp.asset_grid, 1:sz[2])
 end
 
 """
@@ -103,17 +87,11 @@ policy function, otherwise the value function is stored in `out`.
 function bellman_operator!(cp::ConsumerProblem, V::Matrix, out::Matrix;
                            ret_policy::Bool=false)
     # simplify names, set up arrays
-    R, Pi, bet, u, b = cp.R, cp.Pi, cp.bet, cp.u, cp.b
+    R, Pi, bet, b = cp.R, cp.Pi, cp.bet, cp.b
     asset_grid, z_vals = cp.asset_grid, cp.z_vals
 
-    new_V = similar(V)
-    new_c = similar(V)
-
     z_idx = 1:length(z_vals)
-
-    # Linear interpolation of V along the asset grid
-    vf(a, i_z) = CoordInterpGrid(asset_grid, V[:, i_z], BCnearest,
-                                 InterpLinear)[a]
+    vf = interpolate(cp, V)
 
     # compute lower_bound for optimization
     opt_lb = minimum(z_vals) - 1e-5
@@ -123,25 +101,29 @@ function bellman_operator!(cp::ConsumerProblem, V::Matrix, out::Matrix;
         for (i_a, a) in enumerate(asset_grid)
 
             function obj(c)
-                y = sum([vf(R*a+z-c, j) * Pi[i_z, j] for j=z_idx])
+                y = 0.0
+                for j in z_idx
+                    y += vf[R*a+z-c, j] * Pi[i_z, j]
+                end
                 return -u(c)  - bet * y
             end
+
             res = optimize(obj, opt_lb, R.*a.+z.+b)
             c_star = res.minimum
+
             if ret_policy
                 out[i_a, i_z] = c_star
             else
                out[i_a, i_z] = - obj(c_star)
             end
+
         end
     end
+    out
 end
 
-function bellman_operator(cp::ConsumerProblem, V::Matrix; ret_policy=false)
-    out = similar(V)
-    bellman_operator!(cp, V, out, ret_policy=ret_policy)
-    return out
-end
+bellman_operator(cp::ConsumerProblem, V::Matrix; ret_policy=false) =
+    bellman_operator!(cp, V, similar(V); ret_policy=ret_policy)
 
 """
 Extract the greedy policy (policy function) of the model.
@@ -157,14 +139,11 @@ Extract the greedy policy (policy function) of the model.
 None, `out` is updated in place to hold the policy function
 
 """
-function get_greedy!(cp::ConsumerProblem, V::Matrix, out::Matrix)
+get_greedy!(cp::ConsumerProblem, V::Matrix, out::Matrix) =
     bellman_operator!(cp, V, out, ret_policy=true)
-end
 
-
-function get_greedy(cp::ConsumerProblem, V::Matrix)
+get_greedy(cp::ConsumerProblem, V::Matrix) =
     bellman_operator(cp, V, ret_policy=true)
-end
 
 """
 The approximate Coleman operator.
@@ -185,27 +164,23 @@ possible value of z.
 
 None, `out` is updated in place to hold the policy function
 
-
 """
 function coleman_operator!(cp::ConsumerProblem, c::Matrix, out::Matrix)
     # simplify names, set up arrays
-    R, Pi, bet, du, b = cp.R, cp.Pi, cp.bet, cp.du, cp.b
+    R, Pi, bet, b = cp.R, cp.Pi, cp.bet, cp.b
     asset_grid, z_vals = cp.asset_grid, cp.z_vals
     z_size = length(z_vals)
     gam = R * bet
     vals = Array(Float64, z_size)
 
+    cf = interpolate(cp, c)
+
     # linear interpolation to get consumption function. Updates vals inplace
-    function cf!(a, vals)
-        for i=1:z_size
-            vals[i] = CoordInterpGrid(asset_grid, c[:, i], BCnearest,
-                                      InterpLinear)[a]
-        end
-        Void
-    end
+    cf!(a, vals) = map!(i->cf[a, i], vals, 1:z_size)
 
     # compute lower_bound for optimization
     opt_lb = minimum(z_vals) - 1e-2
+
     for (i_z, z) in enumerate(z_vals)
         for (i_a, a) in enumerate(asset_grid)
             function h(t)
@@ -214,11 +189,12 @@ function coleman_operator!(cp::ConsumerProblem, c::Matrix, out::Matrix)
                 return abs(du(t) - max(gam * expectation, du(R*a+z+b)))
             end
             opt_ub = R*a + z + b  # addresses issue #8 on github
-            res = optimize(h, min(opt_lb, opt_ub - 1e-2), opt_ub, method=:brent)
+            res = optimize(h, min(opt_lb, opt_ub - 1e-2), opt_ub,
+                           method=Optim.Brent())
             out[i_a, i_z] = res.minimum
         end
     end
-    return out
+    out
 end
 
 
@@ -228,16 +204,12 @@ Apply the Coleman operator for a given model and initial value
 See the specific methods of the mutating version of this function for more
 details on arguments
 """
-function coleman_operator(cp::ConsumerProblem, c::Matrix)
-    out = similar(c)
-    coleman_operator!(cp, c, out)
-    return out
-end
-
+coleman_operator(cp::ConsumerProblem, c::Matrix) =
+    coleman_operator!(cp, c, similar(c))
 
 function init_values(cp::ConsumerProblem)
     # simplify names, set up arrays
-    R, bet, u, b = cp.R, cp.bet, cp.u, cp.b
+    R, bet, b = cp.R, cp.bet, cp.b
     asset_grid, z_vals = cp.asset_grid, cp.z_vals
     shape = length(asset_grid), length(z_vals)
     V, c = Array(Float64, shape...), Array(Float64, shape...)
