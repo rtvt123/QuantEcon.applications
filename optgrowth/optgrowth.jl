@@ -22,8 +22,8 @@ http://quant-econ.net/jl/dp_intro.html
 
     See the constructor below for details
 =#
-using Grid: CoordInterpGrid, BCnan, BCnearest, InterpLinear
-using Optim: optimize
+using Interpolations
+using Optim
 
 """
 Neoclassical growth model
@@ -35,16 +35,16 @@ Neoclassical growth model
 - `u::Function` : Utility function
 - `grid_max::Int` : Maximum for grid over savings values
 - `grid_size::Int` : Number of points in grid for savings values
-- `grid::FloatRange` : The grid for savings values
+- `grid::LinSpace{Float64}` : The grid for savings values
 
 """
 type GrowthModel
     f::Function
-    bet::Real
+    bet::Float64
     u::Function
     grid_max::Int
     grid_size::Int
-    grid::FloatRange
+    grid::LinSpace{Float64}
 end
 
 
@@ -65,7 +65,7 @@ Constructor of `GrowthModel`
 """
 function GrowthModel(f=default_f, bet=0.95, u=default_u, grid_max=2,
                      grid_size=150)
-    grid = linspace_range(1e-6, grid_max, grid_size)
+    grid = linspace(1e-6, grid_max, grid_size)
     return GrowthModel(f, bet, u, grid_max, grid_size, grid)
 end
 
@@ -88,7 +88,7 @@ policy function, otherwise the value function is stored in `out`.
 function bellman_operator!(g::GrowthModel, w::Vector, out::Vector;
                            ret_policy::Bool=false)
     # Apply linear interpolation to w
-    Aw = CoordInterpGrid(g.grid, w, BCnan, InterpLinear)
+    Aw = scale(interpolate(w, BSpline(Linear()), OnGrid()), g.grid)
 
     for (i, k) in enumerate(g.grid)
         objective(c) = - g.u(c) - g.bet * Aw[g.f(k) - c]

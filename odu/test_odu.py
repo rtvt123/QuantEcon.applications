@@ -1,5 +1,5 @@
 """
-tests for quantecon.models.odu
+tests for odu
 
 @author : Spencer Lyon
 @date : 2014-08-05 10:20:53
@@ -9,7 +9,7 @@ from __future__ import division
 import numpy as np
 from nose.tools import (assert_equal, assert_true, assert_less_equal)
 from quantecon import compute_fixed_point
-from quantecon.models import SearchProblem
+from odu import SearchProblem
 from quantecon.tests import (get_h5_data_file, get_h5_data_group, write_array,
                              max_abs_diff)
 

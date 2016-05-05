@@ -1,5 +1,5 @@
 """
-Tests for quantecon.carrer module
+Tests for career module
 
 @author : Spencer Lyon
 @date : 2014-07-31
@@ -8,7 +8,7 @@ Tests for quantecon.carrer module
 from __future__ import division
 import unittest
 import numpy as np
-from quantecon.models import CareerWorkerProblem
+from career import CareerWorkerProblem
 
 
 class TestCareerWorkerProblem(unittest.TestCase):
