@@ -1,7 +1,7 @@
 r"""
 Filename: lucastree.py
 
-Authors: Thomas Sargent, John Stachurski, Spencer Lyon
+Reference: http://quant-econ.net/py/lucas_model.html
 
 Solves the price function for the Lucas tree in a continuous state
 setting, using piecewise linear approximation for the sequence of
@@ -43,8 +43,8 @@ from quantecon import compute_fixed_point
 
 class LucasTree:
     """
-    Class to solve for the price of a the Lucas tree in the Lucas
-    asset pricing model
+    Class to store parameters of a the Lucas tree model, a grid for the
+    iteration step and some other helpful bits and pieces.
 
     Parameters
     ----------
@@ -73,7 +73,7 @@ class LucasTree:
     Examples
     --------
     >>> tree = LucasTree(gamma=2, beta=0.95, alpha=0.90, sigma=0.1)
-    >>> grid, price_vals = tree.grid, tree.compute_lt_price()
+    >>> price_vals = compute_lt_price(tree)
 
     """
 
