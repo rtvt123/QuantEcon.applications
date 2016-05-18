@@ -34,8 +34,6 @@ The distribution phi of xi is
 where LN means lognormal.
 
 """
-from __future__ import division  # == Omit for Python 3.x == #
-from textwrap import dedent
 import numpy as np
 from scipy import interp
 from scipy.stats import lognorm
@@ -43,7 +41,7 @@ from scipy.integrate import fixed_quad
 from quantecon import compute_fixed_point
 
 
-class LucasTree(object):
+class LucasTree:
     """
     Class to solve for the price of a the Lucas tree in the Lucas
     asset pricing model
@@ -79,7 +77,7 @@ class LucasTree(object):
 
     """
 
-    def __init__(self, gamma, beta, alpha, sigma, grid=None):
+    def __init__(self, gamma=2, beta=0.95, alpha=0.90, sigma=0.1, grid=None):
         self.gamma = gamma
         self.beta = beta
         self.alpha = alpha
@@ -98,51 +96,13 @@ class LucasTree(object):
         # == set up distribution for shocks == #
         self.phi = lognorm(sigma)
 
-        # == set up integration bounds. 4 Standard deviations. Make them
-        # private attributes b/c users don't need to see them, but we
-        # only want to compute them once. == #
+        # == set up integration bounds. 4 Standard deviations.
         self._int_min = np.exp(-4.0 * sigma)
         self._int_max = np.exp(4.0 * sigma)
 
-        # == Set up h from the Lucas Operator == #
+        # == initial h to iterate from == #
         self.h = self._init_h()
 
-    def __repr__(self):
-        m = "LucasTree(gamma={g}, beta={b}, alpha={a}, sigma={s})"
-        return m.format(g=self.gamma, b=self.beta, a=self.alpha, s=self.sigma)
-
-    def __str__(self):
-        m = """\
-        Lucas Pricing Model (Lucas, 1978):
-         - gamma (coefficient of risk aversion)             : {g}
-         - beta (discount parameter)                        : {b}
-         - alpha (correlation coefficient in shock process) : {a}
-         - sigma (volatility of shock process)              : {s}
-         - grid bounds (bounds for where to compute prices) : ({gl:g}, {gu:g})
-         - grid points (number of grid points)              : {gs}
-        """
-        return dedent(m.format(g=self.gamma, b=self.beta, a=self.alpha,
-                               s=self.sigma, gl=self.grid_min,
-                               gu=self.grid_max, gs=self.grid_size))
-
-    def _init_h(self):
-        """
-        Compute the function h in the Lucas operator as a vector of
-        values on the grid
-
-        Recall that h(y) = beta * int u'(G(y,z)) G(y,z) phi(dz)
-        """
-        alpha, gamma, beta = self.alpha, self.gamma, self.beta
-        grid, grid_size = self.grid, self.grid_size
-
-        h = np.empty(grid_size)
-
-        for i, y in enumerate(grid):
-            # == u'(G(y,z)) G(y,z) == #
-            integrand = lambda z: (y**alpha * z)**(1 - gamma)
-            h[i] = beta * self.integrate(integrand)
-
-        return h
 
     def _new_grid(self):
         """
@@ -164,6 +124,26 @@ class LucasTree(object):
         grid = np.linspace(grid_min, grid_max, grid_size)
 
         return grid, grid_min, grid_max, grid_size
+
+    def _init_h(self):
+        """
+        Compute an initial h for the Lucas operator as a vector of
+        values on the grid.
+
+        Recall that h(y) = beta * int u'(G(y,z)) G(y,z) phi(dz)
+        """
+        alpha, gamma, beta = self.alpha, self.gamma, self.beta
+        grid, grid_size = self.grid, self.grid_size
+
+        h = np.empty(grid_size)
+
+        for i, y in enumerate(grid):
+            # == u'(G(y,z)) G(y,z) == #
+            integrand = lambda z: (y**alpha * z)**(1 - gamma)
+            h[i] = beta * self.integrate(integrand)
+
+        return h
+
 
     def integrate(self, g, int_min=None, int_max=None):
         """
@@ -187,92 +167,108 @@ class LucasTree(object):
 
         """
         # == Simplify notation == #
-        phi = self.phi
         if int_min is None:
             int_min = self._int_min
         if int_max is None:
             int_max = self._int_max
 
         # == set up integrand and integrate == #
-        integrand = lambda z: g(z) * phi.pdf(z)
+        integrand = lambda z: g(z) * self.phi.pdf(z)
         result, error = fixed_quad(integrand, int_min, int_max)
         return result
 
-    def lucas_operator(self, f, Tf=None):
-        """
-        The approximate Lucas operator, which computes and returns the
-        updated function Tf on the grid points.
 
-        Parameters
-        ----------
-        f : array_like(float)
-            A candidate function on R_+ represented as points on a grid
-            and should be flat NumPy array with len(f) = len(grid)
+## == Now the functions that act on a Lucas Tree == #
 
-        Tf : array_like(float)
-            Optional storage array for Tf
 
-        Returns
-        -------
-        Tf : array_like(float)
-            The updated function Tf
+def lucas_operator(f, tree, Tf=None):
+    """
+    The approximate Lucas operator, which computes and returns the
+    updated function Tf on the grid points.
 
-        Notes
-        -----
-        The argument `Tf` is optional, but recommended. If it is passed
-        into this function, then we do not have to allocate any memory
-        for the array here. As this function is often called many times
-        in an iterative algorithm, this can save significant computation
-        time.
+    Parameters
+    ----------
+    f : array_like(float)
+        A candidate function on R_+ represented as points on a grid
+        and should be flat NumPy array with len(f) = len(grid)
 
-        """
-        grid,  h = self.grid, self.h
-        alpha, beta = self.alpha, self.beta
+    tree : instance of LucasTree
+        Stores the parameters of the problem
 
-        # == set up storage if needed == #
-        if Tf is None:
-            Tf = np.empty_like(f)
+    Tf : array_like(float)
+        Optional storage array for Tf
 
-        # == Apply the T operator to f == #
-        Af = lambda x: interp(x, grid, f)  # Piecewise linear interpolation
+    Returns
+    -------
+    Tf : array_like(float)
+        The updated function Tf
 
-        for i, y in enumerate(grid):
-            Tf[i] = h[i] + beta * self.integrate(lambda z: Af(y**alpha * z))
+    Notes
+    -----
+    The argument `Tf` is optional, but recommended. If it is passed
+    into this function, then we do not have to allocate any memory
+    for the array here. As this function is often called many times
+    in an iterative algorithm, this can save significant computation
+    time.
 
-        return Tf
+    """
+    grid,  h = tree.grid, tree.h
+    alpha, beta = tree.alpha, tree.beta
 
-    def compute_lt_price(self, error_tol=1e-3, max_iter=50, verbose=0):
-        """
-        Compute the equilibrium price function associated with Lucas
-        tree lt
+    # == set up storage if needed == #
+    if Tf is None:
+        Tf = np.empty_like(f)
 
-        Parameters
-        ----------
-        error_tol, max_iter, verbose
-            Arguments to be passed directly to
-            `quantecon.compute_fixed_point`. See that docstring for more
-            information
+    # == Apply the T operator to f == #
+    Af = lambda x: interp(x, grid, f)  # Piecewise linear interpolation
 
-        Returns
-        -------
-        price : array_like(float)
-            The prices at the grid points in the attribute `grid` of the
-            object
+    for i, y in enumerate(grid):
+        Tf[i] = h[i] + beta * tree.integrate(lambda z: Af(y**alpha * z))
 
-        """
-        # == simplify notation == #
-        grid, grid_size = self.grid, self.grid_size
-        lucas_operator, gamma = self.lucas_operator, self.gamma
+    return Tf
 
-        # == Create storage array for compute_fixed_point. Reduces  memory
-        # allocation and speeds code up == #
-        Tf = np.empty(grid_size)
 
-        # == Initial guess, just a vector of zeros == #
-        f_init = np.zeros(grid_size)
-        f = compute_fixed_point(lucas_operator, f_init, error_tol,
-                                max_iter, verbose, Tf=Tf)
+def compute_lt_price(tree, error_tol=1e-3, max_iter=50, verbose=0):
+    """
+    Compute the equilibrium price function associated with Lucas
+    tree lt
 
-        price = f * grid**gamma
+    Parameters
+    ----------
+    tree : An instance of LucasTree
+        Contains parameters
 
-        return price
+    error_tol, max_iter, verbose
+        Arguments to be passed directly to
+        `quantecon.compute_fixed_point`. See that docstring for more
+        information
+
+    Returns
+    -------
+    price : array_like(float)
+        The prices at the grid points in the attribute `grid` of the
+        object
+
+    """
+    # == simplify notation == #
+    grid, grid_size = tree.grid, tree.grid_size
+    gamma = tree.gamma
+
+    # == Create storage array for compute_fixed_point. Reduces  memory
+    # allocation and speeds code up == #
+    Tf = np.empty(grid_size)
+
+    # == Initial guess, just a vector of zeros == #
+    f_init = np.zeros(grid_size)
+    f = compute_fixed_point(lucas_operator, 
+                f_init, 
+                error_tol,
+                max_iter, 
+                verbose, 
+                10,
+                tree, 
+                Tf=Tf)
+
+    price = f * grid**gamma
+
+    return price
