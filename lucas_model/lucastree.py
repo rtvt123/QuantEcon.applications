@@ -57,15 +57,13 @@ class LucasTree:
         The correlation coefficient in the shock process
     sigma : scalar(float)
         The volatility of the shock process
-    grid : array_like(float), optional(default=None)
-        The grid points on which to evaluate the asset prices. Grid
-        points should be nonnegative. If None is passed, we will create
-        a reasonable one for you
+    grid_size : int
+        The size of the grid to use
 
     Attributes
     ----------
-    gamma, beta, alpha, sigma, grid : see Parameters
-    grid_min, grid_max, grid_size : scalar(int)
+    gamma, beta, alpha, sigma, grid_size : see Parameters
+    grid : ndarray
         Properties for grid upon which prices are evaluated
     phi : scipy.stats.lognorm
         The distribution for the shock process
@@ -77,109 +75,37 @@ class LucasTree:
 
     """
 
-    def __init__(self, gamma=2, beta=0.95, alpha=0.90, sigma=0.1, grid=None):
+    def __init__(self, 
+            gamma=2, 
+            beta=0.95, 
+            alpha=0.90, 
+            sigma=0.1, 
+            grid_size=100):
+
         self.gamma = gamma
         self.beta = beta
         self.alpha = alpha
         self.sigma = sigma
 
-        # == set up grid == #
-        if grid is None:
-            (self.grid, self.grid_min,
-             self.grid_max, self.grid_size) = self._new_grid()
-        else:
-            self.grid = np.asarray(grid)
-            self.grid_min = min(grid)
-            self.grid_max = max(grid)
-            self.grid_size = len(grid)
+        # == Set the grid interval to contain most of the mass of the
+        # stationary distribution of the consumption endowment == #
+        ssd = self.sigma / np.sqrt(1 - self.alpha**2)
+        grid_min, grid_max = np.exp(-4 * ssd), np.exp(4 * ssd)
+        self.grid = np.linspace(grid_min, grid_max, grid_size)
+        self.grid_size = grid_size
 
         # == set up distribution for shocks == #
         self.phi = lognorm(sigma)
+        self.draws = self.phi.rvs(500)
 
-        # == set up integration bounds. 4 Standard deviations.
-        self._int_min = np.exp(-4.0 * sigma)
-        self._int_max = np.exp(4.0 * sigma)
+        # == h(y) = beta * int G(y,z)^(1-gamma) phi(dz) == #
+        self.h = np.empty(self.grid_size)
+        for i, y in enumerate(self.grid):
+            self.h[i] = beta * np.mean((y**alpha * self.draws)**(1 - gamma))
 
-        # == initial h to iterate from == #
-        self.h = self._init_h()
-
-
-    def _new_grid(self):
-        """
-        Construct the default grid for the problem
-
-        This is defined to be np.linspace(0, 10, 100) when alpha > 1
-        and 100 evenly spaced points covering 4 standard deviations
-        when alpha < 1
-        """
-        grid_size = 100
-        if abs(self.alpha) >= 1.0:
-            grid_min, grid_max = 0.0, 10.0
-        else:
-            # == Set the grid interval to contain most of the mass of the
-            # stationary distribution of the consumption endowment == #
-            ssd = self.sigma / np.sqrt(1 - self.alpha**2)
-            grid_min, grid_max = np.exp(-4 * ssd), np.exp(4 * ssd)
-
-        grid = np.linspace(grid_min, grid_max, grid_size)
-
-        return grid, grid_min, grid_max, grid_size
-
-    def _init_h(self):
-        """
-        Compute an initial h for the Lucas operator as a vector of
-        values on the grid.
-
-        Recall that h(y) = beta * int u'(G(y,z)) G(y,z) phi(dz)
-        """
-        alpha, gamma, beta = self.alpha, self.gamma, self.beta
-        grid, grid_size = self.grid, self.grid_size
-
-        h = np.empty(grid_size)
-
-        for i, y in enumerate(grid):
-            # == u'(G(y,z)) G(y,z) == #
-            integrand = lambda z: (y**alpha * z)**(1 - gamma)
-            h[i] = beta * self.integrate(integrand)
-
-        return h
-
-
-    def integrate(self, g, int_min=None, int_max=None):
-        """
-        Integrate the function g(z) * self.phi(z) from int_min to
-        int_max.
-
-        Parameters
-        ----------
-        g : function
-            The function which to integrate
-
-        int_min, int_max : scalar(float), optional
-            The bounds of integration. If either of these parameters are
-            `None` (the default), they will be set to 4 standard
-            deviations above and below the mean.
-
-        Returns
-        -------
-        result : scalar(float)
-            The result of the integration
-
-        """
-        # == Simplify notation == #
-        if int_min is None:
-            int_min = self._int_min
-        if int_max is None:
-            int_max = self._int_max
-
-        # == set up integrand and integrate == #
-        integrand = lambda z: g(z) * self.phi.pdf(z)
-        result, error = fixed_quad(integrand, int_min, int_max)
-        return result
 
 
 ## == Now the functions that act on a Lucas Tree == #
-
 
 def lucas_operator(f, tree, Tf=None):
     """
@@ -214,21 +140,23 @@ def lucas_operator(f, tree, Tf=None):
     """
     grid,  h = tree.grid, tree.h
     alpha, beta = tree.alpha, tree.beta
+    z_vec = tree.draws
+
+    # == turn f into a function == #
+    Af = lambda x: interp(x, grid, f)  
 
     # == set up storage if needed == #
     if Tf is None:
         Tf = np.empty_like(f)
 
-    # == Apply the T operator to f == #
-    Af = lambda x: interp(x, grid, f)  # Piecewise linear interpolation
-
+    # == Apply the T operator to f using Monte Carlo integration == #
     for i, y in enumerate(grid):
-        Tf[i] = h[i] + beta * tree.integrate(lambda z: Af(y**alpha * z))
+        Tf[i] = h[i] + beta * np.mean(Af(y**alpha * z_vec))
 
     return Tf
 
 
-def compute_lt_price(tree, error_tol=1e-3, max_iter=50, verbose=0):
+def compute_lt_price(tree, error_tol=1e-6, max_iter=500, verbose=0):
     """
     Compute the equilibrium price function associated with Lucas
     tree lt
