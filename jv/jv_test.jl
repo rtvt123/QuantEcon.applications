@@ -1,9 +1,10 @@
 using QuantEcon
-include("Models.jl"); using .Models
 using PyPlot
 
+include("jv.jl")
+
 wp = JvWorker(grid_size=25)
-v_init = [wp.x_grid .* 0.5]
+v_init = wp.x_grid .* 0.5
 
 f(x) = bellman_operator(wp, x)
 V = compute_fixed_point(f, v_init, max_iter=40)
@@ -18,4 +19,3 @@ ax[:plot](wp.x_grid, phi_policy, "b-", label="phi")
 ax[:plot](wp.x_grid, s_policy, "g-", label="s")
 ax[:set_xlabel]("x")
 ax[:legend]()
-plt.show()

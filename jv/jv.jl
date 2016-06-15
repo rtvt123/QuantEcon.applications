@@ -13,6 +13,7 @@ http://quant-econ.net/jl/jv.html
 =#
 
 using Distributions
+using Grid
 
 # TODO: the three lines below will allow us to use the non brute-force
 #       approach in bellman operator. I have commented it out because
@@ -52,12 +53,10 @@ where
 - `A::Real` : Parameter in human capital transition function
 - `alpha::Real` : Parameter in human capital transition function
 - `bet::Real` : Discount factor in (0, 1)
-- `x_grid::FloatRange` : Grid for potential levels of x
+- `x_grid::Vector` : Grid for potential levels of x
 - `G::Function` : Transition `function` for human captial
-- `pi_func::Function` : `function` mapping search effort to the probability of
-getting a new job offer
-- `F::UnivariateDistribution` : A univariate distribution from which the value
-of new job offers is drawn
+- `pi_func::Function` : `function` mapping search effort to the probability of getting a new job offer
+- `F::UnivariateDistribution` : A univariate distribution from which the value of new job offers is drawn
 - `quad_nodes::Vector` : Quadrature nodes for integrating over phi
 - `quad_weights::Vector` : Quadrature weights for integrating over phi
 
@@ -66,7 +65,7 @@ type JvWorker
     A::Real
     alpha::Real
     bet::Real
-    x_grid::FloatRange
+    x_grid::Vector{Float64}
     G::Function
     pi_func::Function
     F::UnivariateDistribution
@@ -108,7 +107,7 @@ function JvWorker(A=1.4, alpha=0.6, bet=0.96, grid_size=50)
 
     # range for linspace(epsilon, grid_max, grid_size). Needed for
     # CoordInterpGrid below
-    x_grid = linspace_range(epsilon, grid_max, grid_size)
+    x_grid = collect(linspace(epsilon, grid_max, grid_size))
 
     JvWorker(A, alpha, bet, x_grid, G, pi_func, F, nodes, weights)
 end
