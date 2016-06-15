@@ -54,4 +54,3 @@ x2, y2 = meshgrid(xr2, yr2)
 z2 = f(x2, y2)
 ax[:plot_surface](x2, y2, z2, rstride=1, cstride=1, cmap=ColorMap("jet"),
         linewidth=0, antialiased=true, alpha=0.2)
-plt.show()
