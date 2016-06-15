@@ -13,11 +13,7 @@ http://quant-econ.net/career.html
 using PyPlot
 using QuantEcon
 
-include("Models.jl"); using .Models
-
-# Quick meshgrid function
-meshgrid(x::Vector, y::Vector) = (repmat(x, 1, length(y))',
-                                  repmat(y, 1, length(x)))
+include("career.jl")
 
 srand(41)  # reproducible results
 wp = CareerWorkerProblem()
@@ -37,4 +33,3 @@ ax[:plot_surface](tg, eg, v', rstride=2, cstride=2,
 ax[:set_zlim](150, 200)
 ax[:set_xlabel]("theta", fontsize=14)
 ax[:set_ylabel]("epsilon", fontsize=14)
-plt.show()
