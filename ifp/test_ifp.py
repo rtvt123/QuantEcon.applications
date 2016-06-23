@@ -8,7 +8,7 @@ tests for quantecon.ifp
 from __future__ import division
 import unittest
 import numpy as np
-from quantecon.models import ConsumerProblem
+from ifp import ConsumerProblem
 from quantecon import compute_fixed_point
 from quantecon.tests import get_h5_data_file, write_array, max_abs_diff
 

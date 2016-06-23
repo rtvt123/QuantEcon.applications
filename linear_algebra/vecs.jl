@@ -77,4 +77,3 @@ end
 # Plot the first figure --- three vectors in the plane
 
 plane_fig()
-plt.show()

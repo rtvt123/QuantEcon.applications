@@ -226,7 +226,7 @@ function gen_fig_1(path::Path)
 
     num_rows, num_cols = 2, 2
     fig, axes = subplots(num_rows, num_cols, figsize=(14, 10))
-    plt.subplots_adjust(hspace=0.4)
+    subplots_adjust(hspace=0.4)
     for i=1:num_rows
         for j=1:num_cols
             axes[i, j][:grid]()
@@ -263,10 +263,6 @@ function gen_fig_1(path::Path)
     ax[:plot](1:T, path.g, label=L"$g_t$"; p_args...)
     ax[:plot](1:T-1, path.pi, label=L"$\pi_{t+1}$"; p_args...)
     ax[:legend](ncol=3; legend_args...)
-
-
-    plt.show()
-
 end
 
 
@@ -276,7 +272,7 @@ function gen_fig_2(path::Path)
     # Prepare axes
     num_rows, num_cols = 2, 1
     fig, axes = subplots(num_rows, num_cols, figsize=(10, 10))
-    plt.subplots_adjust(hspace=0.5)
+    subplots_adjust(hspace=0.5)
     bbox = (0., 1.02, 1., .102)
     legend_args = {:bbox_to_anchor => bbox, :loc => 3, :mode => :expand}
     p_args = {:lw => 2, :alpha => 0.7}
@@ -295,5 +291,4 @@ function gen_fig_2(path::Path)
     ax[:set_xlabel]("Time")
     ax[:legend](ncol=1; legend_args...)
 
-    plt.show()
 end

@@ -4,14 +4,15 @@ Created on Fri Feb 27 18:08:44 2015
 
 Author: David Evans
 
-Example Usage of LakeModel in quantecon.models
+Example Usage of LakeModel in lake
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from quantecon.models import LakeModel, LakeModelAgent, LakeModel_Equilibrium
-
+from lake import LakeModel, LakeModelAgent, LakeModel_Equilibrium
 import pandas as pd
-pd.set_option('display.mpl_style', 'default') # Make the graphs a bit prettier
+#Use Matplotlib to Adjust style#
+import matplotlib
+matplotlib.style.use('ggplot')
 
 #Initialize Parameters
 alpha = 0.013

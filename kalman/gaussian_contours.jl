@@ -4,10 +4,8 @@ Plots of bivariate Gaussians to illustrate the Kalman filter.
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
 =#
 using PyPlot
+using QuantEcon: meshgrid
 
-# Quick meshgrid function
-meshgrid(x::Vector, y::Vector) = (repmat(x, 1, length(y))',
-                                  repmat(y, 1, length(x)))
 
 # bivariate normal function. I could call plt.mlab, but this is more fun!
 # See http://mathworld.wolfram.com/BivariateNormalDistribution.html
