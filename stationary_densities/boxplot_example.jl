@@ -1,7 +1,6 @@
 using PyPlot
 
 n = 500
-n = 500
 x = randn(n)  # N(0, 1)
 x = exp(x)  # Map x to lognormal
 y = randn(n) + 2.0  # N(2, 1)
