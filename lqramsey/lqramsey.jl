@@ -235,8 +235,8 @@ function gen_fig_1(path::Path)
     end
 
     bbox = (0., 1.02, 1., .102)
-    legend_args = {:bbox_to_anchor => bbox, :loc => 3, :mode => :expand}
-    p_args = {:lw => 2, :alpha => 0.7}
+    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => :expand)
+    p_args = Dict(:lw => 2, :alpha => 0.7)
 
     # Plot consumption, govt expenditure and revenue
     ax = axes[1, 1]
@@ -274,8 +274,8 @@ function gen_fig_2(path::Path)
     fig, axes = subplots(num_rows, num_cols, figsize=(10, 10))
     subplots_adjust(hspace=0.5)
     bbox = (0., 1.02, 1., .102)
-    legend_args = {:bbox_to_anchor => bbox, :loc => 3, :mode => :expand}
-    p_args = {:lw => 2, :alpha => 0.7}
+    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => :expand)
+    p_args = Dict(:lw => 2, :alpha => 0.7)
 
     # Plot adjustment factor
     ax = axes[1]

@@ -201,8 +201,8 @@ function plot1(rp::RamseyPath)
     end
 
     bbox = (0., 1.02, 1., .102)
-    legend_args = {:bbox_to_anchor => bbox, :loc => 3, :mode => "expand"}
-    p_args = {:lw => 2, :alpha => 0.7}
+    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => "expand")
+    p_args = Dict(:lw => 2, :alpha => 0.7)
 
     ax = axes[1]
     ax[:plot](tt, squeeze(y[2, :], 1), "b-", label="output"; p_args...)
@@ -242,8 +242,8 @@ function plot2(rp::RamseyPath)
     end
 
     bbox = (0., 1.02, 1., .102)
-    legend_args = {:bbox_to_anchor => bbox, :loc => 3, :mode => "expand"}
-    p_args = {:lw => 2, :alpha => 0.7}
+    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => "expand")
+    p_args = Dict(:lw => 2, :alpha => 0.7)
 
     ax = axes[1]
     ax[:plot](tt2, tauhatdif,

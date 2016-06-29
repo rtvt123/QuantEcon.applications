@@ -89,7 +89,7 @@ end
 ## Main
 
 # compute optimal rule
-optimal_lq = LQ(Q, R, A, B, C, bet)
+optimal_lq = LQ(Q, R, A, B, C, zero(B'A), bet)
 Po, Fo, Do = stationary_values(optimal_lq)
 
 # compute robust rule for our theta
@@ -118,11 +118,11 @@ ax[:set_xlabel]("Entropy")
 ax[:grid]()
 
 for axis in ["x", "y"]
-    plt.ticklabel_format(style="sci", axis=axis, scilimits=(0,0))
+    ticklabel_format(style="sci", axis=axis, scilimits=(0,0))
 end
 
 
-plot_args = {:lw => 2, :alpha => 0.7}
+plot_args = Dict(:lw => 2, :alpha => 0.7)
 colors = ("r", "b")
 
 # we reverse order of "worst_case"s so values are ascending

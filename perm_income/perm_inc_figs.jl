@@ -36,7 +36,7 @@ function single_realization()
     ax[:grid]()
     ax[:set_xlabel]("Time")
     bbox = [0.0, 1.02, 1.0, 0.102]
-    p_args = {:lw=> 2, :alpha => 0.7}
+    p_args = Dict(:lw=> 2, :alpha => 0.7)
 
     w, b, c = time_path()
     ax[:plot](0:T, mu + sigma .* w, "g-", label="non-financial income"; p_args...)
