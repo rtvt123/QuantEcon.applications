@@ -24,7 +24,7 @@ distributions = {"student's t with 10 degrees of freedom" => TDist(10),
 
 # == Create a figure and some axes == #
 num_plots = 3
-fig, axes = plt.subplots(num_plots, 1, figsize=(10, 10))
+fig, axes = subplots(num_plots, 1, figsize=(10, 10))
 
 bbox = [0., 1.02, 1., .102]
 legend_args = {:ncol => 2,
