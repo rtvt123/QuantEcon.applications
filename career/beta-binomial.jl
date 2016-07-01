@@ -21,4 +21,4 @@ for (a, b) in zip(a_vals, b_vals)
     ax[:plot]([0:n], pdf(d), "-o", label=ab_label)
 end
 ax[:legend]()
-show()
+
