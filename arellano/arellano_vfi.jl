@@ -81,8 +81,9 @@ function ArellanoEconomy(;β=.953, γ=2., r=0.017, ρ=0.945, η=0.025, θ=0.282,
 
     # Create grids
     Bgrid = collect(linspace(-.4, .4, nB))
-    ly, Π = tauchen(ny, ρ, η)
-    ygrid = exp(ly)
+    mc = tauchen(ny, ρ, η)
+    Π = mc.p
+    ygrid = exp(mc.state_values)
     ydefgrid = min(.969 * mean(ygrid), ygrid)
 
     # Define value functions (Notice ordered different than Python to take
@@ -283,12 +284,10 @@ function QuantEcon.simulate(ae::ArellanoEconomy, capT::Int=5000;
     zero_index = searchsortedfirst(ae.Bgrid, 0.)
     y_init_ind = searchsortedfirst(ae.ygrid, y_init)
     B_init_ind = searchsortedfirst(ae.Bgrid, B_init)
-    initial_dist, meany = zeros(ae.ny), mean(ae.ygrid)
-    initial_dist[y_init_ind] = 1
 
     # Create a QE MarkovChain
     mc = MarkovChain(ae.Π)
-    y_sim_indices = simulate(mc, initial_dist, capT+1)
+    y_sim_indices = simulate(mc, capT+1, y_init_ind)
 
     # Allocate and Fill output
     y_sim_val = Array(Float64, capT+1)
