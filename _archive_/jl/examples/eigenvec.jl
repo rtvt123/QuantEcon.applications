@@ -24,18 +24,18 @@ ax[:set_ylim](ymin, ymax)
 for v in evecs
     # Plot each eigenvector
     ax[:annotate](" ", xy=v, xytext=[0, 0],
-                  arrowprops={"facecolor"=>"blue",
+                  arrowprops=Dict("facecolor"=>"blue",
                               "shrink"=>0,
                               "alpha"=>0.6,
-                              "width"=>0.5})
+                              "width"=>0.5))
 
     # Plot the image of each eigenvector
     v = A * v
     ax[:annotate](" ", xy=v, xytext=[0, 0],
-                  arrowprops={"facecolor"=>"red",
+                  arrowprops=Dict("facecolor"=>"red",
                               "shrink"=>0,
                               "alpha"=>0.6,
-                              "width"=>0.5})
+                              "width"=>0.5))
 end
 
 x = linspace(xmin, xmax, 3)
