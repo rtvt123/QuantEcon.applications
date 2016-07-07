@@ -33,13 +33,13 @@ function plane_fig()  # illustrate vectors in a plane
     ax[:set_xlim](-5, 5)
     ax[:set_ylim](-5, 5)
     ax[:grid]()
-    vecs = {[2, 4], [-3, 3], [-4, -3.5]}
+    vecs = ([2, 4], [-3, 3], [-4, -3.5])
     for v in vecs
         ax[:annotate](" ", xy=v, xytext=[0, 0],
-                    arrowprops={"facecolor"=>"blue",
+                    arrowprops=Dict("facecolor"=>"blue",
                                 "shrink"=>0,
                                 "alpha"=>0.7,
-                                "width"=>0.5})
+                                "width"=>0.5))
         ax[:text](1.1 * v[1], 1.1 * v[2], string(v))
     end
 end
@@ -52,10 +52,10 @@ function scalar_multiply()  # illustrate scalar multiplication
 
     x = [2, 2]
     ax[:annotate](" ", xy=x, xytext=[0, 0],
-                  arrowprops={"facecolor"=>"blue",
+                  arrowprops=Dict("facecolor"=>"blue",
                               "shrink"=>0,
                               "alpha"=>1,
-                              "width"=>0.5})
+                              "width"=>0.5))
 
     ax[:text](x[1] + 0.4, x[2] - 0.2, L"$x$", fontsize="16")
 
@@ -64,10 +64,10 @@ function scalar_multiply()  # illustrate scalar multiplication
     for s in scalars
         v = s .* x
         ax[:annotate](" ", xy=v, xytext=[0, 0],
-                      arrowprops={"facecolor"=>"red",
+                      arrowprops=Dict("facecolor"=>"red",
                                   "shrink"=>0,
                                   "alpha"=>0.5,
-                                  "width"=>0.5})
+                                  "width"=>0.5))
 
         ax[:text](v[1] + 0.4, v[2] - 0.2, LaTeXString("\$$s x\$"),
                   fontsize="16")
