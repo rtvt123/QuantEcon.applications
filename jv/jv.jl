@@ -13,18 +13,9 @@ http://quant-econ.net/jl/jv.html
 =#
 
 using Distributions
-using Grid
+using Interpolations
 
-# TODO: the three lines below will allow us to use the non brute-force
-#       approach in bellman operator. I have commented it out because
-#       I am waiting on a simple constrained optimizer to be written in
-#       pure Julia
-
-# using PyCall
-# @pyimport scipy.optimize as opt
-# minimize = opt.minimize
-
-epsilon = 1e-4  # a small number, used in optimization routine
+# NOTE: only brute-force approach is available in bellman operator. Waiting on a simple constrained optimizer to be written in pure Julia
 
 """
 A Jovanovic-type model of employment with on-the-job search.
@@ -46,7 +37,7 @@ where
 * `pi(s)` : probability of new offer given search level s
 * `x(1 - \phi - s)` : wage
 * `G(x, \phi)` : new human capital when current job retained
-* `U` : Random variable with distribution F -- new draw of human capita
+* `U` : Random variable with distribution F -- new draw of human capital
 
 ##### Fields
 
@@ -59,6 +50,7 @@ where
 - `F::UnivariateDistribution` : A univariate distribution from which the value of new job offers is drawn
 - `quad_nodes::Vector` : Quadrature nodes for integrating over phi
 - `quad_weights::Vector` : Quadrature weights for integrating over phi
+- `epsilon::Float64` : A small number, used in optimization routine
 
 """
 type JvWorker
@@ -71,6 +63,7 @@ type JvWorker
     F::UnivariateDistribution
     quad_nodes::Vector
     quad_weights::Vector
+    epsilon::Float64
 end
 
 """
@@ -82,6 +75,7 @@ Constructor with default values for `JvWorker`
  - `alpha::Real(0.6)` : Parameter in human capital transition function
  - `bet::Real(0.96)` : Discount factor in (0, 1)
  - `grid_size::Int(50)` : Number of points in discrete grid for `x`
+ - `epsilon::Float(1e-4)` : A small number, used in optimization routine
 
 ##### Notes
 
@@ -89,7 +83,7 @@ There is also a version of this function that accepts keyword arguments for
 each parameter
 
 """
-function JvWorker(A=1.4, alpha=0.6, bet=0.96, grid_size=50)
+function JvWorker(A=1.4, alpha=0.6, bet=0.96, grid_size=50, epsilon=1e-4)
     G(x, phi) = A .* (x .* phi).^alpha
     pi_func = sqrt
     F = Beta(2, 2)
@@ -109,168 +103,157 @@ function JvWorker(A=1.4, alpha=0.6, bet=0.96, grid_size=50)
     # CoordInterpGrid below
     x_grid = collect(linspace(epsilon, grid_max, grid_size))
 
-    JvWorker(A, alpha, bet, x_grid, G, pi_func, F, nodes, weights)
+    JvWorker(A, alpha, bet, x_grid, G, pi_func, F, nodes, weights, epsilon)
 end
 
 # make kwarg version
-JvWorker(;A=1.4, alpha=0.6, bet=0.96, grid_size=50) = JvWorker(A, alpha, bet,
-                                                               grid_size)
+JvWorker(;A=1.4, alpha=0.6, bet=0.96, grid_size=50, epsilon=1e-4) = JvWorker(A, alpha, bet, grid_size, epsilon)
 
-
-# TODO: as of 2014-08-14 there is no simple constrained optimizer in Julia
-#       so, we default to the brute force gridsearch approach for this
-#       problem
-
-# NOTE: this function is not type stable because it returns either
-#       Array{Float64, 2} or (Array{Float64, 2}, Array{Float64, 2})
-#       depending on the value of ret_policies. This is probably not a
-#       huge deal, but it is something to be aware of
 """
-Apply the Bellman operator for a given model and initial value.
+Apply the Bellman operator for a given model and initial value, returning only the value function
 
 ##### Arguments
 
 - `jv::JvWorker` : Instance of `JvWorker`
 - `V::Vector`: Current guess for the value function
-- `out::Union{Vector, Tuple{Vector, Vector}}` : Storage for output. Note that
-there are two policy rules, but one value function
-- `;brute_force::Bool(true)`: Whether to use a brute force grid search
-algorithm or a solver from scipy.
-- `;ret_policy::Bool(false)`: Toggles return of value or policy functions
+- `new_V::Vector` : Storage for updated value function
 
 ##### Returns
 
-None, `out` is updated in place. If `ret_policy == true` out is filled with the
-policy function, otherwise the value function is stored in `out`.
+None, `new_V` is updated in place with the value function.
 
 ##### Notes
 
-Currently, the `brute_force` parameter must be `true`. We are waiting for a
-constrained optimization routine to emerge in pure Julia. Once that happens,
-we will re-activate this option.
+Currently, only the brute-force approach is available. We are waiting on a simple constrained optimizer to be written in pure Julia
 
 """
-function bellman_operator!(jv::JvWorker, V::Vector,
-                           out::Union{Vector, Tuple{Vector, Vector}};
-                           brute_force=true, ret_policies=false)
+function bellman_operator!(jv::JvWorker, V::Vector, new_V::Vector)
 
-    if !(brute_force)
-        m = "Only brute_force method active now. Waiting on a pure julia"
-        m *+ " constrained optimization routine to disable"
-        error(m)
-    end
     # simplify notation
-    G, pi_func, F, bet = jv.G, jv.pi_func, jv.F, jv.bet
+    G, pi_func, F, bet, epsilon = jv.G, jv.pi_func, jv.F, jv.bet, jv.epsilon
     nodes, weights = jv.quad_nodes, jv.quad_weights
 
     # prepare interpoland of value function
-    Vf = CoordInterpGrid(jv.x_grid, V, BCnearest, InterpLinear)
+    Vf = extrapolate(interpolate((jv.x_grid, ), V, Gridded(Linear())), Flat())
 
-    # instantiate variables so they are available outside loop and exist
-    # within it
-    if ret_policies
-        if !(typeof(out) <: Tuple{Vector, Vector})
-            msg = "You asked for policies, but only provided one output array"
-            msg *= "\nthere are two policies so two arrays must be given"
-            error(msg)
-        end
-        s_policy, phi_policy = out[1], out[2]
-    else
-        c1(z) = 1.0 - sum(z)
-        c2(z) = z[1] - epsilon
-        c3(z) = z[2] - epsilon
-        guess = (0.2, 0.2)
-        constraints = [Dict("type" => "ineq", "fun"=> i) for i in [c1, c2, c3]]
-        if typeof(out) <: Tuple
-            msg = "Multiple output arrays given. There is only one value"
-            msg = " function.\nDid you mean to pass ret_policies=true?"
-            error(msg)
-        end
-        new_V = out
-    end
-
-    # instantiate the linesearch variables if we need to
-    if brute_force
-        max_val = -1.0
-        cur_val = 0.0
-        max_s = 1.0
-        max_phi = 1.0
-        search_grid = linspace(epsilon, 1.0, 15)
-    end
-
+    # instantiate the linesearch variables
+    max_val = -1.0
+    cur_val = 0.0
+    max_s = 1.0
+    max_phi = 1.0
+    search_grid = linspace(epsilon, 1.0, 15)
 
     for (i, x) in enumerate(jv.x_grid)
 
         function w(z)
             s, phi = z
-            h(u) = Vf[max(G(x, phi), u)] .* pdf(F, u)
+            function h(u)
+              out = similar(u)
+              for j in 1:length(u)
+                out[j] = Vf[max(G(x, phi), u[j])] * pdf(F, u[j])
+              end
+              out
+            end
             integral = do_quad(h, nodes, weights)
             q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf[G(x, phi)]
 
             return - x * (1.0 - phi - s) - bet * q
         end
 
-        if brute_force
-            for s in search_grid
-                for phi in search_grid
-                    if s + phi <= 1.0
-                        cur_val = -w((s, phi))
-                    else
-                        cur_val = -1.0
-                    end
-                    if cur_val > max_val
-                        max_val, max_s, max_phi = cur_val, s, phi
-                    end
+        for s in search_grid
+            for phi in search_grid
+                if s + phi <= 1.0
+                    cur_val = -w((s, phi))
+                else
+                    cur_val = -1.0
+                end
+                if cur_val > max_val
+                    max_val, max_s, max_phi = cur_val, s, phi
                 end
             end
-        else
-            max_s, max_phi = minimize(w, guess, constraints=constraints;
-                                      disp=0, method="SLSQP")["x"]
-
-            max_val = -w((max_s, max_phi), x, a, b, Vf, jv)
-
         end
 
-        if ret_policies
-            s_policy[i], phi_policy[i] = max_s, max_phi
-        else
-            new_V[i] = max_val
-        end
+        new_V[i] = max_val
     end
 end
 
+"""
+Apply the Bellman operator for a given model and initial value, returning policies
 
-function bellman_operator(jv::JvWorker, V::Vector; brute_force=true,
-                          ret_policies=false)
+##### Arguments
+
+- `jv::JvWorker` : Instance of `JvWorker`
+- `V::Vector`: Current guess for the value function
+- `out::Tuple{Vector, Vector}` : Storage for the two policy rules
+
+##### Returns
+
+None, `out` is updated in place with the two policy functions.
+
+##### Notes
+
+Currently, only the brute-force approach is available. We are waiting on a simple constrained optimizer to be written in pure Julia
+
+"""
+function bellman_operator!(jv::JvWorker, V::Vector, out::Tuple{Vector, Vector})
+
+    # simplify notation
+    G, pi_func, F, bet, epsilon = jv.G, jv.pi_func, jv.F, jv.bet, jv.epsilon
+    nodes, weights = jv.quad_nodes, jv.quad_weights
+
+    # prepare interpoland of value function
+    Vf = extrapolate(interpolate((jv.x_grid, ), V, Gridded(Linear())), Flat())
+
+    # instantiate variables
+    s_policy, phi_policy = out[1], out[2]
+
+    # instantiate the linesearch variables
+    max_val = -1.0
+    cur_val = 0.0
+    max_s = 1.0
+    max_phi = 1.0
+    search_grid = linspace(epsilon, 1.0, 15)
+
+    for (i, x) in enumerate(jv.x_grid)
+
+        function w(z)
+            s, phi = z
+            function h(u)
+              out = similar(u)
+              for j in 1:length(u)
+                out[j] = Vf[max(G(x, phi), u[j])] * pdf(F, u[j])
+              end
+              out
+            end
+            integral = do_quad(h, nodes, weights)
+            q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf[G(x, phi)]
+
+            return - x * (1.0 - phi - s) - bet * q
+        end
+
+        for s in search_grid
+            for phi in search_grid
+                if s + phi <= 1.0
+                    cur_val = -w((s, phi))
+                else
+                    cur_val = -1.0
+                end
+                if cur_val > max_val
+                    max_val, max_s, max_phi = cur_val, s, phi
+                end
+            end
+        end
+
+      s_policy[i], phi_policy[i] = max_s, max_phi
+  end
+end
+
+function bellman_operator(jv::JvWorker, V::Vector; ret_policies=false)
     if ret_policies
         out = (similar(V), similar(V))
     else
         out = similar(V)
     end
-    bellman_operator!(jv, V, out, brute_force=brute_force,
-                     ret_policies=ret_policies)
+    bellman_operator!(jv, V, out)
     return out
-end
-
-"""
-Extract the greedy policy (policy function) of the model.
-
-##### Arguments
-
-- `cp::CareerWorkerProblem` : Instance of `CareerWorkerProblem`
-- `v::Vector`: Current guess for the value function
-- `out::Tuple(Vector, Vector)` : Storage for output of policy rule
-
-##### Returns
-
-None, `out` is updated in place to hold the policy function
-
-"""
-function get_greedy!(jv::JvWorker, V::Vector, out::Tuple{Vector, Vector};
-                     brute_force=true)
-    bellman_operator!(jv, V, out, ret_policies=true)
-end
-
-function get_greedy(jv::JvWorker, V::Vector; brute_force=true)
-    bellman_operator(jv, V, ret_policies=true)
 end
