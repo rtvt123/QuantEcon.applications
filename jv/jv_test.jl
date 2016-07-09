@@ -14,7 +14,7 @@ s_policy, phi_policy = bellman_operator(wp, V, ret_policies=true)
 # === plot solution === #
 tr_phi = plot(scatter(; 
     x = wp.x_grid, 
-    y = phi_policy, name = "ϕ policy"), 
+    y = phi_policy, name = "phi policy"), 
     Layout(xaxis_range = [0.0, 
                     maximum(wp.x_grid)], 
                     yaxis_range = [-0.1, 1.1], 
