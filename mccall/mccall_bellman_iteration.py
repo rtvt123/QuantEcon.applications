@@ -29,7 +29,8 @@ class McCallModel:
         if w_vec is None:
             n = 10  # number of possible outcomes for wage
             self.w_vec = np.linspace(10, 20, n)     # wages between 10 and 20
-            dist = BetaBinomial(n-1, 600, 400)  
+            a, b = 600, 400  # shape parameters
+            dist = BetaBinomial(n-1, a, b)
             self.p_vec = dist.pdf()  
 
 
