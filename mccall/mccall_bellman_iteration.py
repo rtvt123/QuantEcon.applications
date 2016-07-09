@@ -4,7 +4,6 @@ Implements iteration on the Bellman equations to solve the McCall growth model
 """
 
 import numpy as np
-
 from quantecon.distributions import BetaBinomial
 
 
