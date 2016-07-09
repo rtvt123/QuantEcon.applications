@@ -93,26 +93,26 @@ plt.savefig('example_averages.png')
 #==============================================================================
 from scipy.stats import norm
 
-#using quaterly data
+# using quaterly data
 alpha_q = (1-(1-alpha)**3)   # alpha is monthly and alpha_q is quarterly
-gamma = 1.
+gamma = 1
 
-logw_dist = norm(np.log(20.),1)
-w = np.linspace(0.,175,201)# wage grid
+logw_dist = norm(np.log(20), 1)
+w = np.linspace(0, 175, 201)# wage grid
 
-#compute probability of each wage level 
+# compute probability of each wage level 
 cdf = logw_dist.cdf(np.log(w))
 pdf = cdf[1:]-cdf[:-1]
 pdf /= pdf.sum()
 w = (w[1:] + w[:-1])/2
 
 #Find the quilibirum
-LME = LakeModel_Equilibrium(alpha_q,gamma,0.99,2.00,pdf,w)
+LME = LakeModel_Equilibrium(alpha_q, gamma, 0.99, 2.00, pdf, w)
 
 #possible levels of unemployment insurance
-cvec = np.linspace(1.,75,25)
-T,W,U,EV,pi = map(np.vstack,zip(* [LME.find_steady_state_tax(c) for c in cvec]))
-W= W[:]
+cvec = np.linspace(5, 135 ,25)
+T, W, U, EV, pi = map(np.vstack,zip(* [LME.find_steady_state_tax(c) for c in cvec]))
+W = W[:]
 T = T[:]
 U = U[:]
 EV = EV[:]
