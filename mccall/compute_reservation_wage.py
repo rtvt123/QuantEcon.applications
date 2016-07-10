@@ -4,7 +4,6 @@ Compute the reservation wage in the McCall model.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from mccall_bellman_iteration import solve_mccall_model
 
 def compute_reservation_wage(mcm):
