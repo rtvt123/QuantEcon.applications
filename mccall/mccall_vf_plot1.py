@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from mccall_bellman_iteration import McCallModel, solve_mccall_model
 
-mcm = McCallModel(beta=0.96)
+mcm = McCallModel()
 V, U = solve_mccall_model(mcm)
 
 fig, ax = plt.subplots()

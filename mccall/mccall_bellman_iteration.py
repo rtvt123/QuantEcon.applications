@@ -26,7 +26,7 @@ class McCallModel:
         # Add a default wage vector and probabilities over the vector using
         # the beta-binomial distribution
         if w_vec is None:
-            n = 10  # number of possible outcomes for wage
+            n = 50  # number of possible outcomes for wage
             self.w_vec = np.linspace(10, 20, n)     # wages between 10 and 20
             a, b = 600, 400  # shape parameters
             dist = BetaBinomial(n-1, a, b)
@@ -62,10 +62,21 @@ def update_bellman_eqs(mcm, V, U):
     return new_V, new_U
 
 
-def solve_mccall_model(mcm, tol=1e-4, max_iter=500):
+def solve_mccall_model(mcm, tol=1e-5, max_iter=500):
+    """
+    Iterates to convergence on the Bellman equations 
+    
+    Parameters
+    ----------
+    mcm : an instance of McCallModel
+    tol : float
+        error tolerance
+    max_iter : int
+        the maximum number of iterations
+    """
 
-    V = np.ones(len(mcm.w_vec))
-    U = 1
+    V = np.ones(len(mcm.w_vec))  # Initial guess of V
+    U = 1                        # Initial guess of U
     i = 0
     error = tol + 1
 
