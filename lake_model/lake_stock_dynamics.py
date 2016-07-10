@@ -1,11 +1,10 @@
 """
-Stock dynamics in a lake model.
+Stock dynamics the a lake model.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from lake_model import LakeModel
-import pandas as pd
 import matplotlib
 matplotlib.style.use('ggplot')
 
@@ -17,8 +16,6 @@ T = 50         # Simulation length
 
 E_0 = e_0 * N_0
 U_0 = u_0 * N_0
-
-xbar = lm.rate_steady_state()
 
 fig, axes = plt.subplots(3, 1, figsize=(10, 8))
 X_0 = (E_0, U_0)

@@ -1,6 +1,6 @@
 """
-Provides a class call LakeModel that simulates the dynamics of unemployment and 
-employment. 
+
+Provides a class that simulates the dynamics of unemployment and employment. 
 
 @authors: David Evans, Matt McKay, Tom Sargent, John Stachurski, etc.
 
