@@ -31,7 +31,9 @@ class McCallModel:
             a, b = 600, 400  # shape parameters
             dist = BetaBinomial(n-1, a, b)
             self.p_vec = dist.pdf()  
-
+        else:
+            self.w_vec = w_vec
+            self.p_vec = p_vec
 
 
 def update_bellman_eqs(mcm, V, U):

@@ -30,7 +30,7 @@ def compute_reservation_wage(mcm):
     V, U = solve_mccall_model(mcm)
     w_idx = np.searchsorted(V - U, 0)  
 
-    if w_idx == len(V) + 1:
+    if w_idx == len(V):
         w_bar = np.inf
     else:
         w_bar = mcm.w_vec[w_idx]
