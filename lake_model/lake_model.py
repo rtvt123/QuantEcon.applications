@@ -28,7 +28,7 @@ class LakeModel:
     """
     def __init__(self, lmda=0.283, alpha=0.013, b=0.0124, d=0.00822):
         self._lmda = lmda
-        self._alpha= alpha
+        self._alpha = alpha
         self._b = b
         self._d = d
 
@@ -36,7 +36,7 @@ class LakeModel:
 
     def compute_derived_values(self):
         # Unpack names to simplify expression
-        lmda, alpha, b, d = self.lmda, self.alpha, self.b, self.d
+        lmda, alpha, b, d = self._lmda, self._alpha, self._b, self._d
 
         self._g = b - d
         self._A = np.array([ [(1-d) * (1-alpha), (1-d) * lmda],
