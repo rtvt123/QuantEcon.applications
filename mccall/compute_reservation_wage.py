@@ -6,7 +6,7 @@ Compute the reservation wage in the McCall model.
 import numpy as np
 from mccall_bellman_iteration import solve_mccall_model
 
-def compute_reservation_wage(mcm):
+def compute_reservation_wage(mcm, return_values=False):
     """
     Computes the reservation wage of an instance of the McCall model
     by finding the smallest w such that V(w) > U.
@@ -19,6 +19,8 @@ def compute_reservation_wage(mcm):
     Parameters
     ----------
     mcm : an instance of McCallModel
+    return_values : bool (optional, default=False)
+        Return the value functions as well 
 
     Returns
     -------
@@ -35,7 +37,10 @@ def compute_reservation_wage(mcm):
     else:
         w_bar = mcm.w_vec[w_idx]
 
-    return w_bar
+    if return_values == False:
+        return w_bar
+    else:
+        return w_bar, V, U
 
 
 
