@@ -6,7 +6,6 @@ Implements iteration on the Bellman equations to solve the McCall growth model
 import numpy as np
 from quantecon.distributions import BetaBinomial
 
-
 class McCallModel:
     """
     Stores the parameters and functions associated with a given model.
@@ -64,7 +63,7 @@ def update_bellman_eqs(mcm, V, U):
     return new_V, new_U
 
 
-def solve_mccall_model(mcm, tol=1e-5, max_iter=500):
+def solve_mccall_model(mcm, tol=1e-4, max_iter=500):
     """
     Iterates to convergence on the Bellman equations 
     
