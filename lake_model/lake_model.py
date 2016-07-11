@@ -32,9 +32,9 @@ class LakeModel:
         self._b = b
         self._d = d
 
-        self.compute_nonprimitives()
+        self.compute_derived_values()
 
-    def compute_nonprimitives(self):
+    def compute_derived_values(self):
         # Unpack names to simplify expression
         lmda, alpha, b, d = self.lmda, self.alpha, self.b, self.d
 
@@ -63,7 +63,7 @@ class LakeModel:
     @lmda.setter
     def lmda(self, new_value):
         self._lmda = new_value
-        self.compute_nonprimitives()
+        self.compute_derived_values()
 
     @property
     def alpha(self):
@@ -72,7 +72,7 @@ class LakeModel:
     @alpha.setter
     def alpha(self, new_value):
         self._alpha = new_value
-        self.compute_nonprimitives()
+        self.compute_derived_values()
 
     @property
     def b(self):
@@ -81,7 +81,7 @@ class LakeModel:
     @b.setter
     def b(self, new_value):
         self._b = new_value
-        self.compute_nonprimitives()
+        self.compute_derived_values()
 
     @property
     def d(self):
@@ -90,7 +90,7 @@ class LakeModel:
     @d.setter
     def d(self, new_value):
         self._d = new_value
-        self.compute_nonprimitives()
+        self.compute_derived_values()
         
 
     def rate_steady_state(self, tol=1e-6):
