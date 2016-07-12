@@ -1,13 +1,11 @@
 """
 
-Provides a class that simulates the dynamics of unemployment and employment. 
-
-@authors: David Evans, Matt McKay, Tom Sargent, John Stachurski, etc.
+Provides a class that simulates the dynamics of unemployment and employment in
+the lake model. 
 
 """
 
 import numpy as np
-from scipy.stats import norm
 
 class LakeModel:
     r"""
@@ -132,7 +130,7 @@ class LakeModel:
             X = self.A @ X
             
     def simulate_rate_path(self, x0, T):
-        r'''
+        r"""
         Simulates the the sequence of employment and unemployent rates.
         
         Parameters
@@ -147,7 +145,7 @@ class LakeModel:
         x : iterator 
             Contains sequence of employment and unemployment rates
 
-        '''
+        """
         x = np.atleast_1d(x0) # recast as array just in case
         for t in range(T):
             yield x
