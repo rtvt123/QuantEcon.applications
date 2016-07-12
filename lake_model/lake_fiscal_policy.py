@@ -14,13 +14,17 @@ and a given utility function u,
 
 """
 
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from lake_model import LakeModel
 from scipy.stats import norm
-from scipy.optimize import newton
+from scipy.optimize import brentq
+from numba import jit
 
+matplotlib.style.use('ggplot')
 # What to do about these imports?  I'm currently using sym links...
+
 from mccall_bellman_iteration import McCallModel  
 from compute_reservation_wage import compute_reservation_wage 
 
@@ -30,18 +34,13 @@ alpha  = 0.013               # monthly
 alpha_q = (1-(1-alpha)**3)   # quarterly
 b      = 0.0124
 d      = 0.00822
-beta   = 0.99                   
-gamma  = 1
-
-# Default utility function
-
-sigma = 2
-def u(c):
-    return (c**(1 - sigma) - 1) / (1 - sigma)
-
+beta   = 0.98       
+gamma  = 1.0
+sigma  = 2.0
+    
 # The default wage distribution --- a discretized lognormal
 
-log_wage_mean, wage_grid_size, max_wage = 20, 200, 175
+log_wage_mean, wage_grid_size, max_wage = 20, 200, 170
 logw_dist = norm(np.log(log_wage_mean), 1)
 w_vec = np.linspace(0, max_wage, wage_grid_size + 1) # wage grid
 cdf = logw_dist.cdf(np.log(w_vec))
@@ -49,60 +48,95 @@ pdf = cdf[1:]-cdf[:-1]
 p_vec = pdf / pdf.sum()
 w_vec = (w_vec[1:] + w_vec[:-1])/2
 
-# Levels of unemployment insurance we wish to study
-c_vec = np.linspace(5, 135 ,25)
 
-def compute_lambda(c, T):
+def compute_optimal_quantities(c, T):
     """
-    Compute the job finding rate given c and T by first computing the
-    reservation wage from the McCall model.
+    Compute the reservation wage, job finding rate and value functions of the workers 
+    given c and T.
 
     """
     
-    mcm = McCallModel(alpha=alpha, 
+    mcm = McCallModel(alpha=alpha_q, 
                      beta=beta, 
                      gamma=gamma, 
                      c=c-T,         # post tax compensation
-                     u=u, 
+                     sigma=sigma, 
                      w_vec=w_vec-T, # post tax wages
                      p_vec=p_vec)
 
-    w_bar = compute_reservation_wage(mcm)
-    lmda = np.sum(p_vec[w_vec > w_bar])
-    return lmda
+    w_bar, V, U = compute_reservation_wage(mcm, return_values=True)
+    lmda = gamma * np.sum(p_vec[w_vec-T > w_bar])
+    return w_bar, lmda, V, U
 
-
-def compute_steady_state_unemployment(c, T):
+def compute_steady_state_quantities(c, T):
     """
-    Compute the steady state unemployment rate given c and T using lambda, the
-    job finding rate, from the McCall model and then computing steady state
-    unemployment corresponding to alpha, lambda, b, d.
+    Compute the steady state unemployment rate given c and T using optimal
+    quantities from the McCall model and computing corresponding steady state
+    quantities
 
     """
-    lmda = compute_lambda(c, T)
-    lm = LakeModel(alpha=alpha, lmda=lmda, b=0, d=0) 
+    w_bar, lmda, V, U = compute_optimal_quantities(c, T)
+    
+    # Compute steady state employment and unemployment rates
+    lm = LakeModel(alpha=alpha_q, lmda=lmda, b=0, d=0) 
     x = lm.rate_steady_state()
     e, u = x
-    return u
+    
+    # Compute steady state welfare
+    w = np.sum(V * p_vec * (w_vec - T > w_bar)) / np.sum(p_vec * (w_vec - T > w_bar))
+    welfare = e * w + u * U
+    
+    return e, u, welfare
 
-     
 def find_balanced_budget_tax(c):
     """
     Find the smallest tax that will induce a balanced budget
 
     """
     def steady_state_budget(t):
-        u = compute_steady_state_unemployment(c, t)
+        e, u, w = compute_steady_state_quantities(c, t)
         return t - u * c
 
-    T = newton(steady_state_budget, 0.0001)
+    T = brentq(steady_state_budget, 0.0, 0.9 * c)
     return T
 
 
-## Now step through all c values to be considered.  At each one, find budget
-## balancing T, and then evaluate welfare, employment and unemployment at this
-## pair (c, T).  Plot the values against c.
 
+if __name__ == '__main__':
 
+# Levels of unemployment insurance we wish to study
+    c_vec = np.linspace(5, 140, 60)
 
+    tax_vec = []
+    unempl_vec = []
+    empl_vec = []
+    welfare_vec = []
 
+    for c in c_vec:
+        t = find_balanced_budget_tax(c)
+        e_rate, u_rate, welfare = compute_steady_state_quantities(c, t)
+        tax_vec.append(t)
+        unempl_vec.append(u_rate)
+        empl_vec.append(e_rate)
+        welfare_vec.append(welfare)
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 12))
+
+    ax = axes[0, 0]
+    ax.plot(c_vec, unempl_vec, lw=2, alpha=0.7)
+    ax.set_title('unemployment')
+
+    ax = axes[0, 1]
+    ax.plot(c_vec, empl_vec, lw=2, alpha=0.7)
+    ax.set_title('employment')
+
+    ax = axes[1, 0]
+    ax.plot(c_vec, tax_vec, lw=2, alpha=0.7)
+    ax.set_title('tax')
+
+    ax = axes[1, 1]
+    ax.plot(c_vec, welfare_vec, lw=2, alpha=0.7)
+    ax.set_title('welfare')
+
+    plt.tight_layout()
+    plt.show()
