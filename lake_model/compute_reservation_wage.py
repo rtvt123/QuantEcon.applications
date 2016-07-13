@@ -1,1 +1,0 @@
-../mccall/compute_reservation_wage.py
