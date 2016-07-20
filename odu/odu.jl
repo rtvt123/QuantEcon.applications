@@ -89,8 +89,8 @@ function SearchProblem(bet=0.95, c=0.6, F_a=1, F_b=1, G_a=3, G_b=1.2,
     pi_min = 1e-3  # avoids instability
     pi_max = 1 - pi_min
 
-    w_grid = linspace_range(0, w_max, w_grid_size)
-    pi_grid = linspace_range(pi_min, pi_max, pi_grid_size)
+    w_grid = linspace(0, w_max, w_grid_size)
+    pi_grid = linspace(pi_min, pi_max, pi_grid_size)
 
     nodes, weights = qnwlege(21, 0.0, w_max)
 

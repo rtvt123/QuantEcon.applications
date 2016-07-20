@@ -1,5 +1,5 @@
 using PyPlot
-using QuantEcon: mc_compute_stationary
+using QuantEcon 
 
 P =[0.971 0.029 0.000
     0.145 0.778 0.077
@@ -30,6 +30,6 @@ end
 
 ax[:scatter](x_vals, y_vals, z_vals, c="r", s = 60)
 
-P = MarkovChain(P)
-psi_star = mc_compute_stationary(P)
+mc = MarkovChain(P)
+psi_star = stationary_distributions(mc)[1]
 ax[:scatter](psi_star[1], psi_star[2], psi_star[3], c="k", s = 60)

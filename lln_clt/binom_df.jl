@@ -9,8 +9,8 @@ using PyPlot
 using Distributions
 
 srand(42)  # reproducible results
-fig, axes = plt.subplots(2, 2)
-plt.subplots_adjust(hspace=0.4)
+fig, axes = subplots(2, 2)
+subplots_adjust(hspace=0.4)
 axes = [axes...]
 ns = [1, 2, 4, 8]
 dom = 1:9
