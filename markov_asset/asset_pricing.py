@@ -16,7 +16,7 @@ References
 
 """
 import numpy as np
-from numpy.linalg import solve
+from numpy.linalg import solve, eigvals
 
 
 class AssetPriceModel:
@@ -41,13 +41,35 @@ class AssetPriceModel:
     P_tilde : ndarray
         The matrix :math:`P(x, y) y^(1 - \gamma)`
 
-    P_tilde : ndarray
-        The matrix :math:`P(x, y) y^(\gamma)`
-
     """
     def __init__(self, beta, mc, gamma):
         self.beta, self.mc, self.gamma = beta, mc, gamma
         self.n = self.mc.P.shape[0]
+
+        # Create P_tilde
+        Ptilde = self.P_tilde
+        ev = beta*eigvals(Ptilde)
+        lt1 = np.all(ev.real < 1.0)
+        if not lt1:
+            msg = "All eigenvalues of Ptilde must be less than 1/beta"
+            raise ValueError(msg)
+
+    def __repr__(self):
+        m = "AssetPrices(beta={b:g}, P='{n:g} by {n:g}', s={s}, gamma={g:g})"
+        return m.format(b=self.beta, n=self.mc.P.shape[0],
+                        s=self.mc.state_values, g=self.gamma)
+
+    def __str__(self):
+        m = """\
+        AssetPrices (Merha and Prescott, 1985):
+          - beta (discount factor)               : {b:g}
+          - P (Transition matrix)                : {n:g} by {n:g}
+          - s (growth rate of consumption)       : {s:s}
+          - gamma (Coefficient of risk aversion) : {g:g}
+        """
+
+        return dedent(m.format(b=self.beta, n=self.mc.P.shape[0],
+                               s=repr(self.mc.state_values), g=self.gamma))
 
     @property
     def P_tilde(self):
