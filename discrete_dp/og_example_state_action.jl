@@ -1,3 +1,5 @@
+using QuantEcon 
+
 B = 10
 M = 5
 alpha = 0.5
@@ -24,3 +26,5 @@ for s in 0:(M + B)
     end
 end
 
+ddp = DiscreteDP(R, Q, beta, s_indices, a_indices);
+results = solve(ddp, PFI)
