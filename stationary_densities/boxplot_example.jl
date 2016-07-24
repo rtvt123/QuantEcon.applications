@@ -1,4 +1,5 @@
 using Plots
+pyplot()
 using LaTeXStrings
 using StatPlots     # needed for box plot support
 
@@ -11,5 +12,4 @@ data = vcat(x, y, z)
 l = [LaTeXString("\$X\$") LaTeXString("\$Y\$")  LaTeXString("\$Z\$") ]
 xlabels = reshape(repmat(l, n), n*3, 1)
 
-pyplot()
 boxplot(xlabels, data, label="", ylims=(-2, 14))

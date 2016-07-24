@@ -2,6 +2,7 @@
 Illustrates the usage of the BetaBinomial type
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+		  Victoria Gregory <victoria.gregory@nyu.edu>
 
 @date: 2014-08-04
 
@@ -9,6 +10,7 @@ Illustrates the usage of the BetaBinomial type
 
 using QuantEcon
 using Plots
+pyplot()
 using LaTeXStrings
 
 n = 50
@@ -24,6 +26,4 @@ for (a, b) in zip(a_vals, b_vals)
     push!(labels, ab_label)
 end
 
-pyplot()
-#plotlyjs()
 plot(0:n, pdfs, label=labels', markershape=:circle)
