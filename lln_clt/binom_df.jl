@@ -1,5 +1,6 @@
 #=
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 References
 ----------
@@ -7,6 +8,7 @@ Based off the original python file binom_df.py
 =#
 
 using Plots
+pyplot()
 using Distributions
 using LaTeXStrings
 
@@ -23,6 +25,5 @@ for n in ns
     push!(titles, t)
 end
 
-pyplot()
 bar(dom, pdfs, layout=4, alpha=0.6, xlims=(-0.5, 8.5), ylims=(0, 0.55),
     xticks=dom, yticks=[0.0, 0.2, 0.4], legend=:none, title=titles')
