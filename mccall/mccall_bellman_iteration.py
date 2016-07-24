@@ -56,7 +56,8 @@ def _update_bellman(alpha, beta, gamma, c, sigma, w_vec, p_vec, V, V_new, U):
     for w_idx, w in enumerate(w_vec):
         # w_idx indexes the vector of possible wages
         V_new[w_idx] = u(w, sigma) + beta * ((1 - alpha) * V[w_idx] + alpha * U)
-        U_new = u(c, sigma) + beta * (1 - gamma) * U + \
+
+    U_new = u(c, sigma) + beta * (1 - gamma) * U + \
                     beta * gamma * np.sum(np.maximum(U, V) * p_vec)
 
     return U_new
