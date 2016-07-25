@@ -16,7 +16,7 @@ References
 
 """
 import numpy as np
-from numpy.linalg import solve
+from numpy.linalg import solve, eigvals
 
 
 class AssetPriceModel:
@@ -41,13 +41,19 @@ class AssetPriceModel:
     P_tilde : ndarray
         The matrix :math:`P(x, y) y^(1 - \gamma)`
 
-    P_tilde : ndarray
-        The matrix :math:`P(x, y) y^(\gamma)`
-
     """
     def __init__(self, beta, mc, gamma):
         self.beta, self.mc, self.gamma = beta, mc, gamma
         self.n = self.mc.P.shape[0]
+
+        # Create P_tilde
+        Ptilde = self.P_tilde
+        ev = beta * eigvals(Ptilde)
+        lt1 = np.all(ev.real < 1.0)
+        if not lt1:
+            msg = "All eigenvalues of Ptilde must be less than 1/beta"
+            raise ValueError(msg)
+
 
     @property
     def P_tilde(self):

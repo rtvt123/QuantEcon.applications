@@ -1,5 +1,6 @@
-using PyPlot
 using QuantEcon
+using Plots
+plotlyjs(size = (900, 900))
 
 # == Model parameters == #
 r = 0.05
@@ -16,39 +17,22 @@ R = zeros(2, 2)
 Rf = zeros(2, 2); Rf[1, 1] = q
 A = [1.0+r -c_bar+mu;
      0.0 1.0]
-B = [-1.0, 0.0]
-C = [sigma, 0.0]
+B = [-1.0; 0.0]
+C = [sigma; 0.0]
 
 # == Compute solutions and simulate == #
-lq = LQ(Q, R, A, B, C; bet=bet, capT=T, rf=Rf)
-x0 = [0.0, 1.0]
+lq = LQ(Q, R, A, B, C; bet = bet, capT = T, rf = Rf)
+x0 = [0.0; 1.0]
 xp, up, wp = compute_sequence(lq, x0)
 
 # == Convert back to assets, consumption and income == #
-assets = squeeze(xp[1, :], 1)            # a_t
-c = squeeze(up .+ c_bar, 1)              # c_t
-income = squeeze(wp[1, 2:end] .+ mu, 1)  # y_t
+assets = vec(xp[1, :])           # a_t
+c = vec(up + c_bar)              # c_t
+income = vec(wp[1, 2:end] + mu)  # y_t
 
 # == Plot results == #
-n_rows = 2
-fig, axes = subplots(n_rows, 1, figsize=(12, 10))
-
-subplots_adjust(hspace=0.5)
-for i=1:n_rows
-    axes[i][:grid]()
-    axes[i][:set_xlabel]("Time")
-end
-bbox = [0.0, 1.02, 1.0, 0.102]
-
-# Make first plot
-axes[1][:plot](2:T+1, income, "g-", label="non-financial income", lw=2,
-               alpha=0.7)
-axes[1][:plot](1:T, c, "k-", label="consumption", lw=2, alpha=0.7)
-axes[1][:legend](ncol=2, bbox_to_anchor=bbox, loc=3, mode="expand")
-
-# Make second plot
-axes[2][:plot](2:T+1, cumsum(income .- mu), "r-",
-               label="cumulative unanticipated income", lw=2, alpha=0.7)
-axes[2][:plot](1:T+1, assets, "b-", label="assets", lw=2, alpha=0.7)
-axes[2][:plot](1:T, zeros(T), "k-")
-axes[2][:legend](ncol=2, bbox_to_anchor=bbox, loc=3, mode="expand")
+plot(Vector[assets, c, zeros(T + 1), income, cumsum(income - mu)],
+  lab = ["assets" "consumption" "" "non-financial income" "cumulative unanticipated income"],
+  color = [:blue :green :black :orange :red],
+  width = 3, xaxis = ("Time"), layout = (2, 1),
+  bottom_margin = 20mm, show = true)
