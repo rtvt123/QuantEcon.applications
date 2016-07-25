@@ -1,26 +1,29 @@
 #=
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 References
 ----------
 Based off the original python file binom_df.py
 =#
-using PyPlot
+
+using Plots
+pyplot()
 using Distributions
+using LaTeXStrings
 
 srand(42)  # reproducible results
-fig, axes = subplots(2, 2)
-subplots_adjust(hspace=0.4)
-axes = [axes...]
 ns = [1, 2, 4, 8]
 dom = 1:9
 
-for (ax, n) in zip(axes, ns)
+pdfs = []
+titles = []
+for n in ns
     b = Binomial(n, 0.5)
-    ax[:bar](dom, pdf(b, dom), alpha=0.6, align="center")
-    ax[:set_xlim](-0.5, 8.5)
-    ax[:set_ylim](0, 0.55)
-    ax[:set_xticks](dom)
-    ax[:set_yticks]((0, 0.2, 0.4))
-    ax[:set_title](LaTeXString("\$n = $n\$"))
+    push!(pdfs, pdf(b, dom))
+    t = LaTeXString("\$n = $n\$")
+    push!(titles, t)
 end
+
+bar(dom, pdfs, layout=4, alpha=0.6, xlims=(-0.5, 8.5), ylims=(0, 0.55),
+    xticks=dom, yticks=[0.0, 0.2, 0.4], legend=:none, title=titles')
