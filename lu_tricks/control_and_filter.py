@@ -1,7 +1,6 @@
 """
-Classical discrete time LQ optimal control and filtering problems
-
-The control problems we consider take the form
+Classical discrete time LQ optimal control and filtering problems. The
+control problems we consider take the form
 
     \max \sum_{t = 0}^N \beta^t \{a_t y_t - h y^2_t / 2 - [d(L)y_t]^2 \} 
     
@@ -13,11 +12,7 @@ subject to h > 0, 0 < \beta < 1 and
 
 The sequence {y_t} is scalar
 
-Notation:
-  - Number of periods: N
-  - Number of lags: m
-  - Number of params in r(L): k+1
-
+Authors: Balint Skoze, Tom Sargent, John Stachurski
 
 """
 
@@ -26,26 +21,26 @@ import scipy.stats as spst
 import scipy.linalg as la
 
 class LQFilter:
-    """
     
-    Parameters
-    ----------
-        d : list or numpy.array (1-D or a 2-D column vector)
-                The order of the coefficients: [d_0, d_1, ..., d_m]
-        h : scalar
-                Parameter of the objective function (corresponding to the quadratic term)
-        y_m : list or numpy.array (1-D or a 2-D column vector)
-                Initial conditions for y
-        r : list or numpy.array (1-D or a 2-D column vector)
-                The order of the coefficients: [r_0, r_1, ..., r_k] 
-                (optional, if not defined -> deterministic problem)
-        beta : scalar
-                Discount factor (optional, default value is one)
+    def __init__(self, d, h, y_m, r=None, h_eps=None, beta=None):
+        """
         
-    """
-    
-    
-    def __init__(self, d, h, y_m, r = None, h_eps = None, beta = None):
+        Parameters
+        ----------
+            d : list or numpy.array (1-D or a 2-D column vector)
+                    The order of the coefficients: [d_0, d_1, ..., d_m]
+            h : scalar
+                    Parameter of the objective function (corresponding to the
+                    quadratic term)
+            y_m : list or numpy.array (1-D or a 2-D column vector)
+                    Initial conditions for y
+            r : list or numpy.array (1-D or a 2-D column vector)
+                    The order of the coefficients: [r_0, r_1, ..., r_k] 
+                    (optional, if not defined -> deterministic problem)
+            beta : scalar
+                    Discount factor (optional, default value is one)
+            
+        """
         
         self.h = h
         self.d = np.asarray(d)
