@@ -15,7 +15,6 @@ axes[0, 1].plot(lambda_series, 'b-', lw=2, label=r'$\lambda_t$')
 axes[1, 0].plot(d_series, 'b-', lw=2, label=r'$d_t$')
 axes[1, 1].plot(np.log(d_series), 'b-', lw=2, label=r'$\log \, d_t$')
 for ax in axes.flatten():
-    ax.legend(loc='upper left')
-    ax.grid()
+    ax.legend(loc='upper left', frameon=False)
 plt.tight_layout()
 plt.show()

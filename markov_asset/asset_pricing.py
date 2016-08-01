@@ -1,13 +1,17 @@
 """
 Filename: asset_pricing.py
 
-Computes asset prices in a Lucas endowment economy when the endowment obeys
-geometric growth driven by a finite state Markov chain.  That is,
+Computes asset prices with a Lucas style discount factor when the endowment
+obeys geometric growth driven by a finite state Markov chain.  That is,
 
 .. math::
-    d_{t+1} = X_{t+1} d_t
+    d_{t+1} = lambda(X_{t+1}) d_t
 
-where :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
+where 
+
+    * :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
+
+    * :math:`\lambda` is a given positive-valued function
 
 References
 ----------
@@ -16,6 +20,7 @@ References
 
 """
 import numpy as np
+import quantecon as qe
 from numpy.linalg import solve, eigvals
 
 
@@ -33,49 +38,42 @@ class AssetPriceModel:
         proces
     gamma : scalar(float)
         Coefficient of risk aversion
-
-    Attributes
-    ----------
-    beta, mc, gamm : as above
-
-    P_tilde : ndarray
-        The matrix :math:`P(x, y) y^(1 - \gamma)`
+    lambda_func : callable
+        The function mapping states to growth rates
 
     """
-    def __init__(self, beta, mc, gamma):
-        self.beta, self.mc, self.gamma = beta, mc, gamma
+    def __init__(self, beta=0.96, mc=None, gamma=2.0, lambda_func=np.exp):
+        self.beta, self.gamma = beta, gamma
+        self.lambda_func = lambda_func
+
+        # == A default process for the Markov chain == #
+        if mc is None:
+            self.rho = 0.9
+            self.sigma = 0.02
+            self.mc = qe.tauchen(self.rho, self.sigma)
+        else:
+            self.mc = mc
+
         self.n = self.mc.P.shape[0]
 
-        # Create P_tilde
-        Ptilde = self.P_tilde
-        ev = beta * eigvals(Ptilde)
-        lt1 = np.all(ev.real < 1.0)
-        if not lt1:
-            msg = "All eigenvalues of Ptilde must be less than 1/beta"
+    def test_stability(self, Q):
+        """
+        Stability test for a given matrix Q.
+        """
+        sr = np.max(np.abs(eigvals(Q)))
+        if not sr < 1 / self.beta:
+            msg = "Spectral radius condition failed with radius = %f" % sr
             raise ValueError(msg)
 
 
-    @property
-    def P_tilde(self):
-        P = self.mc.P
-        y = self.mc.state_values
-        return P * y**(1 - self.gamma)  # using broadcasting
 
-    @property
-    def P_check(self):
-        P = self.mc.P
-        y = self.mc.state_values
-        return P * y**(-self.gamma)  # using broadcasting
-
-
-
-def tree_price(apm):
+def tree_price(ap):
     """
     Computes the price-dividend ratio of the Lucas tree.
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     Returns
@@ -84,25 +82,28 @@ def tree_price(apm):
         Lucas tree price-dividend ratio
 
     """
-    # == Simplify names == #
-    beta = apm.beta
-    P_tilde = apm.P_tilde
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.P, ap.mc.state_values
+    J = P * ap.lambda_func(y)**(1 - gamma)
+
+    # == Make sure that a unique solution exists == #
+    ap.test_stability(J)
 
     # == Compute v == #
-    I = np.identity(apm.n)
-    O = np.ones(apm.n)
-    v = beta * solve(I - beta * P_tilde, P_tilde @ O)
+    I = np.identity(ap.n)
+    Ones = np.ones(ap.n)
+    v = beta * solve(I - beta * J, J @ Ones)
 
     return v
 
 
-def consol_price(apm, zeta):
+def consol_price(ap, zeta):
     """
     Computes price of a consol bond with payoff zeta
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     zeta : scalar(float)
@@ -110,30 +111,33 @@ def consol_price(apm, zeta):
 
     Returns
     -------
-    p_bar : array_like(float)
+    p : array_like(float)
         Console bond prices
 
     """
-    # == Simplify names == #
-    beta = apm.beta
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.P, ap.mc.state_values
+    M = P * ap.lambda_func(y)**(- gamma)
+
+    # == Make sure that a unique solution exists == #
+    ap.test_stability(M)
 
     # == Compute price == #
-    P_check = apm.P_check
-    I = np.identity(apm.n)
-    O = np.ones(apm.n)
-    p_bar = beta * solve(I - beta * P_check, P_check.dot(zeta * O))
+    I = np.identity(ap.n)
+    Ones = np.ones(ap.n)
+    p = beta * solve(I - beta * M, zeta * M @ Ones)
 
-    return p_bar
+    return p
 
 
-def call_option(apm, zeta, p_s, T=[], epsilon=1e-8):
+def call_option(ap, zeta, p_s, T=[], epsilon=1e-8):
     """
     Computes price of a call option on a consol bond, both finite
     and infinite horizon
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     zeta : scalar(float)
@@ -160,14 +164,14 @@ def call_option(apm, zeta, p_s, T=[], epsilon=1e-8):
 
     """
     # == Simplify names, initialize variables == #
-    beta = apm.beta
-    P_check = apm.P_check
+    beta = ap.beta
+    P_check = ap.P_check
 
     # == Compute consol price == #
-    v_bar = consol_price(apm, zeta)
+    v_bar = consol_price(ap, zeta)
 
     # == Compute option price == #
-    w_bar = np.zeros(apm.n)
+    w_bar = np.zeros(ap.n)
     error = epsilon + 1
     t = 0
     w_bars = {}
