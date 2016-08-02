@@ -48,13 +48,12 @@ end
 
 
 
-function update_bellman!(mcm, V, V_new, U)
-    """
-    A function to update the Bellman equations.  Note that V_new is
-    modified in place (i.e, modified by this function).  The new value of U is
-    returned.
+"""
+A function to update the Bellman equations.  Note that V_new is modified in
+place (i.e, modified by this function).  The new value of U is returned.
 
-    """
+"""
+function update_bellman!(mcm, V, V_new, U)
     # Simplify notation
     alpha, beta, sigma, c, gamma = mcm.alpha, mcm.beta, mcm.sigma, mcm.c, mcm.gamma
 

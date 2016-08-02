@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from lake_model import LakeModel
 from scipy.stats import norm
 from scipy.optimize import brentq
-from numba import jit
 
 # Make sure you have local copies of these files in your pwd
 from mccall_bellman_iteration import McCallModel  
