@@ -1,13 +1,17 @@
 """
 Filename: asset_pricing.py
 
-Computes asset prices in a Lucas endowment economy when the endowment obeys
-geometric growth driven by a finite state Markov chain.  That is,
+Computes asset prices with a Lucas style discount factor when the endowment
+obeys geometric growth driven by a finite state Markov chain.  That is,
 
 .. math::
-    d_{t+1} = X_{t+1} d_t
+    d_{t+1} = g(X_{t+1}) d_t
 
-where :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
+where 
+
+    * :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
+
+    * :math:`g` is a given positive-valued function
 
 References
 ----------
@@ -16,13 +20,13 @@ References
 
 """
 import numpy as np
+import quantecon as qe
 from numpy.linalg import solve, eigvals
 
 
 class AssetPriceModel:
     r"""
-    A class that stores the primitives of the asset pricing model, plus a few
-    useful matrices as attributes
+    A class that stores the primitives of the asset pricing model.
 
     Parameters
     ----------
@@ -30,52 +34,45 @@ class AssetPriceModel:
         Discount factor
     mc : MarkovChain
         Contains the transition matrix and set of state values for the state
-        proces
+        process
     gamma : scalar(float)
         Coefficient of risk aversion
-
-    Attributes
-    ----------
-    beta, mc, gamm : as above
-
-    P_tilde : ndarray
-        The matrix :math:`P(x, y) y^(1 - \gamma)`
+    g : callable
+        The function mapping states to growth rates
 
     """
-    def __init__(self, beta, mc, gamma):
-        self.beta, self.mc, self.gamma = beta, mc, gamma
+    def __init__(self, beta=0.96, mc=None, gamma=2.0, g=np.exp):
+        self.beta, self.gamma = beta, gamma
+        self.g = g
+
+        # == A default process for the Markov chain == #
+        if mc is None:
+            self.rho = 0.9
+            self.sigma = 0.02
+            self.mc = qe.tauchen(self.rho, self.sigma, n=25)
+        else:
+            self.mc = mc
+
         self.n = self.mc.P.shape[0]
 
-        # Create P_tilde
-        Ptilde = self.P_tilde
-        ev = beta * eigvals(Ptilde)
-        lt1 = np.all(ev.real < 1.0)
-        if not lt1:
-            msg = "All eigenvalues of Ptilde must be less than 1/beta"
+    def test_stability(self, Q):
+        """
+        Stability test for a given matrix Q.
+        """
+        sr = np.max(np.abs(eigvals(Q)))
+        if not sr < 1 / self.beta:
+            msg = "Spectral radius condition failed with radius = %f" % sr
             raise ValueError(msg)
 
 
-    @property
-    def P_tilde(self):
-        P = self.mc.P
-        y = self.mc.state_values
-        return P * y**(1 - self.gamma)  # using broadcasting
 
-    @property
-    def P_check(self):
-        P = self.mc.P
-        y = self.mc.state_values
-        return P * y**(-self.gamma)  # using broadcasting
-
-
-
-def tree_price(apm):
+def tree_price(ap):
     """
     Computes the price-dividend ratio of the Lucas tree.
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     Returns
@@ -84,25 +81,28 @@ def tree_price(apm):
         Lucas tree price-dividend ratio
 
     """
-    # == Simplify names == #
-    beta = apm.beta
-    P_tilde = apm.P_tilde
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.P, ap.mc.state_values
+    J = P * ap.g(y)**(1 - gamma)
+
+    # == Make sure that a unique solution exists == #
+    ap.test_stability(J)
 
     # == Compute v == #
-    I = np.identity(apm.n)
-    O = np.ones(apm.n)
-    v = beta * solve(I - beta * P_tilde, P_tilde @ O)
+    I = np.identity(ap.n)
+    Ones = np.ones(ap.n)
+    v = solve(I - beta * J, beta * J @ Ones)
 
     return v
 
 
-def consol_price(apm, zeta):
+def consol_price(ap, zeta):
     """
     Computes price of a consol bond with payoff zeta
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     zeta : scalar(float)
@@ -110,30 +110,32 @@ def consol_price(apm, zeta):
 
     Returns
     -------
-    p_bar : array_like(float)
+    p : array_like(float)
         Console bond prices
 
     """
-    # == Simplify names == #
-    beta = apm.beta
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.P, ap.mc.state_values
+    M = P * ap.g(y)**(- gamma)
+
+    # == Make sure that a unique solution exists == #
+    ap.test_stability(M)
 
     # == Compute price == #
-    P_check = apm.P_check
-    I = np.identity(apm.n)
-    O = np.ones(apm.n)
-    p_bar = beta * solve(I - beta * P_check, P_check.dot(zeta * O))
+    I = np.identity(ap.n)
+    Ones = np.ones(ap.n)
+    p = solve(I - beta * M, beta * zeta * M @ Ones)
 
-    return p_bar
+    return p
 
 
-def call_option(apm, zeta, p_s, T=[], epsilon=1e-8):
+def call_option(ap, zeta, p_s, epsilon=1e-7):
     """
-    Computes price of a call option on a consol bond, both finite
-    and infinite horizon
+    Computes price of a call option on a consol bond.
 
     Parameters
     ----------
-    apm: AssetPriceModel
+    ap: AssetPriceModel
         An instance of AssetPriceModel containing primitives
 
     zeta : scalar(float)
@@ -142,48 +144,31 @@ def call_option(apm, zeta, p_s, T=[], epsilon=1e-8):
     p_s : scalar(float)
         Strike price
 
-    T : iterable(integers)
-        Length of option in the finite horizon case
-
     epsilon : scalar(float), optional(default=1e-8)
         Tolerance for infinite horizon problem
 
     Returns
     -------
-    w_bar : array_like(float)
+    w : array_like(float)
         Infinite horizon call option prices
 
-    w_bars : dict
-        A dictionary of key-value pairs {t: vec}, where t is one of
-        the dates in the list T and vec is the option prices at that
-        date
-
     """
-    # == Simplify names, initialize variables == #
-    beta = apm.beta
-    P_check = apm.P_check
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.P, ap.mc.state_values
+    M = P * ap.g(y)**(- gamma)
 
-    # == Compute consol price == #
-    v_bar = consol_price(apm, zeta)
+    # == Make sure that a unique consol price exists == #
+    ap.test_stability(M)
 
     # == Compute option price == #
-    w_bar = np.zeros(apm.n)
+    p = consol_price(ap, zeta)
+    w = np.zeros(ap.n)
     error = epsilon + 1
-    t = 0
-    w_bars = {}
     while error > epsilon:
-        if t in T:
-            w_bars[t] = w_bar
-
         # == Maximize across columns == #
-        to_stack = (beta*P_check.dot(w_bar), v_bar-p_s)
-        w_bar_new = np.amax(np.vstack(to_stack), axis=0)
+        w_new = np.maximum(beta * M @ w, p - p_s)
+        # == Find maximal difference of each component and update == #
+        error = np.amax(np.abs(w-w_new))
+        w = w_new
 
-        # == Find maximal difference of each component == #
-        error = np.amax(np.abs(w_bar-w_bar_new))
-
-        # == Update == #
-        w_bar = w_bar_new
-        t += 1
-
-    return w_bar, w_bars
+    return w
