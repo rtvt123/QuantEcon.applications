@@ -1,146 +1,131 @@
 #=
-Computes asset prices in an endowment economy when the endowment obeys
-geometric growth driven by a finite state Markov chain.  The transition
-matrix of the Markov chain is P, and the set of states is s.  The
-discount factor is beta, and gamma is the coefficient of relative risk
-aversion in the household's utility function.
 
-@author : Spencer Lyon <spencer.lyon@nyu.edu>
+Filename: asset_pricing.jl
 
-@date: 2014-06-27
+@authors: Spencer Lyon, Tom Sargent, John Stachurski
+
+Computes asset prices with a Lucas style discount factor when the endowment
+obeys geometric growth driven by a finite state Markov chain.  That is,
+
+.. math::
+    d_{t+1} = g(X_{t+1}) d_t
+
+where 
+
+    * :math:`\{X_t\}` is a finite Markov chain with transition matrix P.
+
+    * :math:`g` is a given positive-valued function
 
 References
 ----------
 
-http://quant-econ.net/jl/markov_asset.html
+    http://quant-econ.net/py/markov_asset.html
+
 =#
 
-"""
-A class to compute asset prices when the endowment follows a finite Markov chain
+using QuantEcon
 
-##### Fields
+# A default Markov chain for the state process
+rho = 0.9
+sigma = 0.02
+n = 25  
+default_mc = tauchen(n, rho, sigma)
 
-- `bet::Float64` : Discount factor in (0, 1)
-- `P::Matrix{Float64}` A valid stochastic matrix
-- `s::Vector{Float64}` : Growth rate of consumption in each state
-- `gamma::Float64` : Coefficient of risk aversion
-- `n::Int(size(P, 1))`: The numberof states
-- `P_tilde::Matrix{Float64}` : modified transition matrix used in computing the
-price of the lucas tree
-- `P_check::Matrix{Float64}` : modified transition matrix used in computing the
-price of the consol
-
-"""
-type AssetPrices
-    bet::Real
-    P::Matrix
-    s::Vector
-    gamm::Real
-    n::Int
-    P_tilde::Matrix
-    P_check::Matrix
+type AssetPriceModel
+    beta :: Float64    # Discount factor
+    gamma :: Float64   # Coefficient of risk aversion
+    mc :: MarkovChain  # State process
+    n :: Int           # Number of states
+    g :: Function      # Function mapping states into growth rates
 end
 
-"""
-Construct an instance of `AssetPrices`, where `n`, `P_tilde`, and `P_check` are
-computed automatically for you. See also the documentation for the type itself
-"""
-function AssetPrices(bet::Real, P::Matrix, s::Vector, gamm::Real)
-    P_tilde = P .* s'.^(1-gamm)
-    P_check = P .* s'.^(-gamm)
-    return AssetPrices(bet, P, s, gamm, size(P, 1), P_tilde, P_check)
+function AssetPriceModel(;beta=0.96, gamma=2.0, mc=default_mc, g=exp)
+    n = size(mc.p)[1]
+    return AssetPriceModel(beta, gamma, mc, n, g) 
 end
 
-"""
-Computes the function v such that the price of the lucas tree is v(lambda)C_t
-
-##### Arguments
-
-- `ap::AssetPrices` : An instance of the `AssetPrices` type
-
-##### Returns
-
-- `v::Vector{Float64}` : the pricing function for the lucas tree
 
 """
-function tree_price(ap::AssetPrices)
-    # Simplify names
-    P, s, gamm, bet, P_tilde = ap.P, ap.s, ap.gamm, ap.bet, ap.P_tilde
+Stability test for a given matrix Q.
+"""
+function test_stability(ap::AssetPriceModel, Q::Matrix)
+    sr = maximum(abs(eigvals(Q)))
+    if sr >= 1 / ap.beta
+        msg = "Spectral radius condition failed with radius = $sr"
+        throw(ArgumentError(msg))
+    end
+end
 
-    # Compute v
+
+"""
+Computes the price-dividend ratio of the Lucas tree.
+
+"""
+function tree_price(ap::AssetPriceModel)
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.p, ap.mc.state_values
+    y = reshape(y, 1, ap.n)
+    J = P .* ap.g(y).^(1 - gamma)
+
+    # == Make sure that a unique solution exists == #
+    test_stability(ap, J)
+
+    # == Compute v == #
     I = eye(ap.n)
-    O = ones(ap.n)
-    v = bet .* ((I - bet .* P_tilde)\ (P_tilde * O))
+    Ones = ones(ap.n)
+    v = (I - beta * J) \ (beta * J * Ones)
+
     return v
 end
+
 
 """
 Computes price of a consol bond with payoff zeta
 
-##### Arguments
-
-- `ap::AssetPrices` : An instance of the `AssetPrices` type
-- `zeta::Float64` : Per period payoff of the consol
-
-##### Returns
-
-- `pbar::Vector{Float64}` : the pricing function for the lucas tree
-
 """
-function consol_price(ap::AssetPrices, zet::Real)
-    # Simplify names
-    P, s, gamm, bet, P_check = ap.P, ap.s, ap.gamm, ap.bet, ap.P_check
+function consol_price(ap::AssetPriceModel, zeta::Float64)
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.p, ap.mc.state_values
+    y = reshape(y, 1, ap.n)
+    M = P .* ap.g(y).^(- gamma)
 
-    # Compute v
+    # == Make sure that a unique solution exists == #
+    test_stability(ap, M)
+
+    # == Compute price == #
     I = eye(ap.n)
-    O = ones(ap.n)
-    v = bet .* ((I - bet .* P_check)\ (P_check * (zet .*O)))
-    return v
+    Ones = ones(ap.n)
+    p = (I - beta * M) \ ( beta * zeta * M * Ones)
+
+    return p
 end
 
-"""
-Computes price of a call option on a consol bond, both finite and infinite
-horizon
-
-##### Arguments
-
-- `zeta::Float64` : Coupon of the console
-- `p_s::Float64` : Strike price
-- `T::Vector{Int}(Int[])`: Time periods for which to store the price in the
-finite horizon version
-- `epsilon::Float64` : Tolerance for infinite horizon problem
-
-##### Returns
-
-- `w_bar::Vector{Float64}` Infinite horizon call option prices
-- `w_bars::Dict{Int, Vector{Float64}}` A dictionary of key-value pairs {t: vec},
-where t is one of the dates in the list T and vec is the option prices at that
-date
 
 """
-function call_option(ap::AssetPrices, zet::Real, p_s::Real,
-                     T::Vector{Int}=Int[], epsilon=1e-8)
-    # Simplify names, initialize variables
-    P, s, gamm, bet, P_check = ap.P, ap.s, ap.gamm, ap.bet, ap.P_check
+Computes price of a perpetual call option on a consol bond.
 
-    # Compute consol price
-    v_bar = consol_price(ap, zet)
+"""
+function call_option(ap::AssetPriceModel, zeta::Float64, p_s::Float64, epsilon=1e-7)
 
-    # Compute option price
-    w_bar = zeros(ap.n)
+    # == Simplify names, set up matrices  == #
+    beta, gamma, P, y = ap.beta, ap.gamma, ap.mc.p, ap.mc.state_values
+    y = reshape(y, 1, ap.n)
+    M = P .* ap.g(y).^(- gamma)
 
-    err = epsilon + 1.0
-    t = 0
-    w_bars = Dict{Int, Vector{eltype(P)}}()
-    while err > epsilon
-        if t in T w_bars[t] = w_bar end
-        # Maximize across columns
-        w_bar_new = max(bet .* (P_check * w_bar), v_bar.-p_s)
-        # Find maximal difference of each component
-        err = Base.maxabs(w_bar - w_bar_new)
-        # Update
-        w_bar = w_bar_new
-        t += 1
+    # == Make sure that a unique console price exists == #
+    test_stability(ap, M)
+
+    # == Compute option price == #
+    p = consol_price(ap, zeta)
+    w = zeros(ap.n, 1)
+    error = epsilon + 1
+    while (error > epsilon)
+        # == Maximize across columns == #
+        w_new = max(beta * M * w, p - p_s)
+        # == Find maximal difference of each component and update == #
+        error = maximum(abs(w-w_new))
+        w = w_new
     end
-    return w_bar, w_bars
+
+    return w
 end

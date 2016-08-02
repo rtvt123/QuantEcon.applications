@@ -5,9 +5,9 @@ from scipy.linalg import solve, eigvals
 
 n = 25  # size of state space
 beta = 0.9
-mc = qe.tauchen(0.96, 0.1, n=n)  
+mc = qe.tauchen(0.96, 0.02, n=n)  
 
-K = mc.P * mc.state_values
+K = mc.P * np.exp(mc.state_values)
 
 warning_message = "Spectral radius condition fails"
 assert np.max(np.abs(eigvals(K))) < 1 / beta,  warning_message
