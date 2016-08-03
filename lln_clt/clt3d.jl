@@ -2,12 +2,14 @@
 Visual illustration of the central limit theorem in 3d
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 References
 ----------
 Based off the original python file clt3d.py
 =#
-using PyPlot
+using Plots
+pyplot()
 using Distributions
 using KernelDensity
 
@@ -51,27 +53,24 @@ S = cumsum(Z, 2)
 Y = S .* (1. ./ sqrt(ns))'
 
 # == Plot == #
-fig = figure()
-ax = fig[:gca](projection="3d")
-
 a, b = -3, 3
 gs = 100
 xs = linspace(a, b, gs)
 
-# == Build verts == #
-greys = linspace(0.3, 0.7, nmax)
-verts = {}
+x_vec = []
+y_vec = []
+z_vec = []
+colors = []
 for n=ns
     kde_est = kde(Y[:, n])
     _xs, ys = kde_est.x, kde_est.density
-    ax[:plot3D](_xs, ys, n, zdir="x", color=string(greys[n]),
-                fillstyle="bottom")
+    push!(x_vec, collect(_xs))
+    push!(y_vec, ys)
+    push!(z_vec, collect(n*ones(1, length(_xs))))
+    push!(colors, RGBA(0, 0, 0, 1-(n-1)/nmax))
 end
 
-ax[:set_xlim3d](1, nmax)
-ax[:set_xticks](ns)
-ax[:set_xlabel]("n")
-ax[:set_yticks]((-3, 0, 3))
-ax[:set_ylim3d](a, b)
-ax[:set_zlim3d](0, 0.4)
-ax[:set_zticks]((0.2, 0.4))
+plot(z_vec, x_vec, y_vec, color=colors', legend=:none)
+plot!(xlims=(1, nmax), xticks=ns, xlabel="n")
+plot!(ylims=(a, b), yticks=[-3; 0; 3])
+plot!(zlims=(0, 0.4), zticks=[0.2; 0.4])

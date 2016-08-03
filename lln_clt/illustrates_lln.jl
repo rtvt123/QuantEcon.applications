@@ -2,14 +2,17 @@
 Visual illustration of the law of large numbers.
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 References
 ----------
 
 Based off the original python file illustrates_lln.py
 =#
-using PyPlot
+using Plots
+pyplot()
 using Distributions
+using LaTeXStrings
 
 n = 100
 srand(42)  # reproducible results
@@ -22,19 +25,12 @@ distributions = Dict("student's t with 10 degrees of freedom" => TDist(10),
                  "poisson(4)" => Poisson(4),
                  "exponential with lambda = 1" => Exponential(1))
 
-# == Create a figure and some axes == #
 num_plots = 3
-fig, axes = subplots(num_plots, 1, figsize=(10, 10))
-
-bbox = [0., 1.02, 1., .102]
-legend_args = Dict(:ncol => 2,
-               :bbox_to_anchor => bbox,
-               :loc => 3,
-               :mode => "expand")
-subplots_adjust(hspace=0.5)
-
-
-for ax in axes
+dist_data = zeros(num_plots, n)
+sample_means = []
+dist_means = []
+titles = []
+for i = 1:num_plots
     dist_names = collect(keys(distributions))
     # == Choose a randomly selected distribution == #
     name = dist_names[rand(1:length(dist_names))]
@@ -45,16 +41,27 @@ for ax in axes
 
     # == Compute sample mean at each n == #
     sample_mean = Array(Float64, n)
-    for i=1:n
-        sample_mean[i] = mean(data[1:i])
+    for j=1:n
+        sample_mean[j] = mean(data[1:j])
     end
 
-    # == Plot == #
-    ax[:plot](1:n, data, "o", color="grey", alpha=0.5)
-    axlabel = LaTeXString("\$\\bar{X}_n\$ for \$X_i \\sim\$ $name")
-    ax[:plot](1:n, sample_mean, "g-", lw=3, alpha=0.6, label=axlabel)
     m = mean(dist)
-    ax[:plot](1:n, ones(n)*m, "k--", lw=1.5, label=L"$\mu$")
-    ax[:vlines](1:n, m, data, lw=0.2)
-    ax[:legend](;legend_args...)
+
+    dist_data[i, :] = data'
+    push!(sample_means, sample_mean)
+    push!(dist_means, m*ones(n))
+    push!(titles, name)
+
 end
+
+# == Plot == #
+N = repmat(reshape(repmat(linspace(1, n, n), 1, num_plots)', 1, n*num_plots), 2, 1)
+heights = [zeros(1,n*num_plots); reshape(dist_data, 1, n*num_plots)]
+plot(N, heights, layout=(3, 1), label="", color=:grey, alpha=0.5)
+plot!(1:n, dist_data', layout=(3, 1), color=:grey, markershape=:circle,
+        alpha=0.5, label="", linewidth=0)
+plot!(1:n, sample_means, linewidth=3, alpha=0.6, color=:green, legend=:topleft,
+      layout=(3, 1), label=[LaTeXString("\$\\bar{X}_n\$") "" ""])
+plot!(1:n, dist_means, color=:black, linewidth=1.5, layout=(3, 1),
+      linestyle=:dash, grid=false, label=[LaTeXString("\$\\mu\$") "" ""])
+plot!(title=titles')

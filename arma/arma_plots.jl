@@ -1,81 +1,53 @@
 using QuantEcon
-using PyPlot
+using Plots
+pyplot()
 
 # == Plot functions == #
 
-function plot_spectral_density(arma::ARMA; ax=None, show_plot=true)
+function plot_spectral_density(arma::ARMA)
     (w, spect) = spectral_density(arma, two_pi=false)
-    if show_plot
-        fig, ax = subplots()
-    end
-    ax[:set_xlim]([0, pi])
-    ax[:set_title]("Spectral density")
-    ax[:set_xlabel]("frequency")
-    ax[:set_ylabel]("spectrum")
-    ax[:semilogy](w, spect, axes=ax, color="blue", lw=2, alpha=0.7)
-    if !show_plot
-        return ax
-    end
+    p = plot(w, spect, color=:blue, linewidth=2, alpha=0.7,
+             xlims=(0, pi), xlabel="frequency", ylabel="spectrum",
+             title="Spectral density", yscale=:log, legend=:none, grid=false)
+    return p
 end
 
 
-function plot_autocovariance(arma::ARMA; ax=None, show_plot=true)
+function plot_autocovariance(arma::ARMA)
     acov = autocovariance(arma)
     n = length(acov)
-    if show_plot
-        fig, ax = subplots()
-    end
-    ax[:set_title]("Autocovariance")
-    ax[:set_xlim](-0.5, n - 0.5)
-    ax[:set_xlabel]("time")
-    ax[:set_ylabel]("autocovariance")
-    ax[:stem](0:(n-1), acov)
-    if !show_plot
-        return ax
-    end
+    N = repmat(0:(n - 1), 1, 2)'
+    heights = [zeros(1,n); acov']
+    p = scatter(0:(n - 1), acov, title="Autocovariance", xlims=(-0.5, n - 0.5),
+                xlabel="time", ylabel="autocovariance", legend=:none, color=:blue)
+    plot!(-1:(n + 1), zeros(1, n + 3), color=:red, linewidth=0.5)
+    plot!(N, heights, color=:blue, grid=false)
+    return p
 end
 
-function plot_impulse_response(arma::ARMA; ax=None, show_plot=true)
+function plot_impulse_response(arma::ARMA)
     psi = impulse_response(arma)
     n = length(psi)
-    if show_plot
-        fig, ax = subplots()
-    end
-    ax[:set_title]("Impulse response")
-    ax[:set_xlim](-0.5, n - 0.5)
-    ax[:set_xlabel]("time")
-    ax[:set_ylabel]("response")
-    ax[:stem](0:(n-1), psi)
-    if !show_plot
-        return ax
-    end
+    N = repmat(0:(n - 1), 1, 2)'
+    heights = [zeros(1,n); psi']
+    p = scatter(0:(n - 1), psi, title="Impulse response", xlims=(-0.5, n - 0.5),
+                xlabel="time", ylabel="response", legend=:none, color=:blue)
+    plot!(-1:(n + 1), zeros(1, n + 3), color=:red, linewidth=0.5)
+    plot!(N, heights, color=:blue, grid=false)
+    return p
 end
 
-function plot_simulation(arma::ARMA; ax=None, show_plot=true)
+function plot_simulation(arma::ARMA)
     X = simulation(arma)
     n = length(X)
-    if show_plot
-        fig, ax = subplots()
-    end
-    ax[:set_title]("Sample path")
-    ax[:set_xlim](0.0, n)
-    ax[:set_xlabel]("time")
-    ax[:set_ylabel]("state space")
-    ax[:plot](0:(n-1), X, color="blue", lw=2, alpha=0.7)
-    if !show_plot
-        return ax
-    end
+    p = plot(0:(n - 1), X, color=:blue, linewidth=2, alpha=0.7,
+             xlims=(0.0, n), xlabel="time", ylabel="state space",
+            title="Sample path", legend=:none, grid=:false)
+    return p
 end
 
 function quad_plot(arma::ARMA)
-    (num_rows, num_cols) = (2, 2)
-    fig, axes = subplots(num_rows, num_cols, figsize=(12, 8))
-    subplots_adjust(hspace=0.4)
-    plot_functions = [plot_impulse_response,
-                      plot_spectral_density,
-                      plot_autocovariance,
-                      plot_simulation]
-    for (plot_func, ax) in zip(plot_functions, reshape(axes, 1, 4))
-        plot_func(arma, ax=ax, show_plot=false)
-    end
+    p = plot(plot_impulse_response(arma), plot_autocovariance(arma),
+         plot_spectral_density(arma), plot_simulation(arma))
+    return p
 end

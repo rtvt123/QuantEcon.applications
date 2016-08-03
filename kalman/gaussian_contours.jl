@@ -2,9 +2,10 @@
 Plots of bivariate Gaussians to illustrate the Kalman filter.
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 =#
-using PyPlot
-using QuantEcon: meshgrid
+using Plots
+pyplot()
 
 
 # bivariate normal function. I could call plt.mlab, but this is more fun!
@@ -42,8 +43,6 @@ y = [2.3, -1.9]''
 # == Set up grid for plotting == #
 x_grid = linspace(-1.5, 2.9, 100)
 y_grid = linspace(-3.1, 1.7, 100)
-X, Y = meshgrid(x_grid, y_grid)
-
 
 function gen_gaussian_plot_vals(mu, C)
     "Z values for plotting the bivariate Gaussian N(mu, C)"
@@ -54,69 +53,51 @@ function gen_gaussian_plot_vals(mu, C)
 end
 
 
-# helper function to prepare axis
-function prep_ax()
-    fig, ax = subplots()
-    ax[:xaxis][:grid](true, zorder=0)
-    ax[:yaxis][:grid](true, zorder=0)
-    return ax
-end
-
-
 function plot1()
-    ax = prep_ax()
     Z = gen_gaussian_plot_vals(x_hat, Σ)
-    ax[:contourf](X, Y, Z, 6, alpha=0.6, cmap=ColorMap("jet"))
-    cs = ax[:contour](X, Y, Z, 6, colors="black")
-    ax[:clabel](cs, inline=1, fontsize=10)
+    contour(x_grid, y_grid, Z, fill=true, levels=6, color=:lightrainbow)
+    contour!(x_grid, y_grid, Z, fill=false, levels=6, color=:grays, cbar=false)
 end
 
 
 function plot2()
-    ax = prep_ax()
     Z = gen_gaussian_plot_vals(x_hat, Σ)
-    ax[:contourf](X, Y, Z, 6, alpha=0.6, cmap=ColorMap("jet"))
-    cs = ax[:contour](X, Y, Z, 6, colors="black")
-    ax[:clabel](cs, inline=1, fontsize=10)
-    ax[:text](y[1], y[2], L"$y$", fontsize=20, color="black")
+    contour(x_grid, y_grid, Z, fill=true, levels=6, color=:lightrainbow)
+    contour!(x_grid, y_grid, Z, fill=false, levels=6, color=:grays, cbar=false)
+    annotate!(y[1], y[2], L"$y$", color=:black)
 end
 
 
 function plot3()
-    ax = prep_ax()
     Z = gen_gaussian_plot_vals(x_hat, Σ)
-    cs1 = ax[:contour](X, Y, Z, 6, colors="black")
-    ax[:clabel](cs1, inline=1, fontsize=10)
     M = Σ * G' * inv(G * Σ * G' + R)
     x_hat_F = x_hat + M * (y - G * x_hat)
     Sigma_F = Σ - M * G * Σ
     new_Z = gen_gaussian_plot_vals(x_hat_F, Sigma_F)
-    cs2 = ax[:contour](X, Y, new_Z, 6, colors="black")
-    ax[:clabel](cs2, inline=1, fontsize=10)
-    ax[:contourf](X, Y, new_Z, 6, alpha=0.6, cmap=ColorMap("jet"))
-    ax[:text](y[1], y[2], L"$y$", fontsize=20, color="black")
+    # Plot Density 1
+    contour(x_grid, y_grid, new_Z, fill=true, levels=6, color=:lightrainbow, alpha=0.8)
+    contour!(x_grid, y_grid, new_Z, fill=false, levels=6, color=:grays, cbar=false)
+    # Plot Density 2
+    contour!(x_grid, y_grid, Z, fill=false, levels=6, color=:grays, cbar=false)
+    annotate!(y[1], y[2], L"$y$", color=:black)
 end
 
 
 function plot4()
-    ax = prep_ax()
-    # Density 1
     Z = gen_gaussian_plot_vals(x_hat, Σ)
-    cs1 = ax[:contour](X, Y, Z, 6, colors="black")
-    ax[:clabel](cs1, inline=1, fontsize=10)
-    # Density 2
     M = Σ * G' * inv(G * Σ * G' + R)
     x_hat_F = x_hat + M * (y - G * x_hat)
     Sigma_F = Σ - M * G * Σ
     Z_F = gen_gaussian_plot_vals(x_hat_F, Sigma_F)
-    cs2 = ax[:contour](X, Y, Z_F, 6, colors="black")
-    ax[:clabel](cs2, inline=1, fontsize=10)
-    # Density 3
     new_x_hat = A * x_hat_F
     new_Sigma = A * Sigma_F * A' + Q
     new_Z = gen_gaussian_plot_vals(new_x_hat, new_Sigma)
-    cs3 = ax[:contour](X, Y, new_Z, 6, colors="black")
-    ax[:clabel](cs3, inline=1, fontsize=10)
-    ax[:contourf](X, Y, new_Z, 6, alpha=0.6, cmap=ColorMap("jet"))
-    ax[:text](y[1], y[2], L"$y$", fontsize=20, color="black")
+    # Plot Density 1
+    contour(x_grid, y_grid, new_Z, fill=true, levels=6, color=:lightrainbow, alpha=0.9)
+    contour!(x_grid, y_grid, new_Z, fill=false, levels=6, color=:grays, cbar=false)
+    # Plot Density 2
+    contour!(x_grid, y_grid, Z, fill=false, levels=6, color=:grays, cbar=false)
+    # Plot Density 3
+    contour!(x_grid, y_grid, Z_F, fill=false, levels=6, color=:grays, cbar=false)
+    annotate!(y[1], y[2], L"$y$", color=:black)
 end
