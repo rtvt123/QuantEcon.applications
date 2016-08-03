@@ -9,6 +9,7 @@ the constraint at time t.
 For more complete description of inputs and outputs see the website.
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 @date: 2014-08-21
 
@@ -22,7 +23,9 @@ http://quant-econ.net/hist_dep_policies.html
 =#
 using QuantEcon
 using Optim
-using PyPlot
+using Plots
+using LaTeXStrings
+pyplot()
 
 type HistDepRamsey
     # These are the parameters of the economy
@@ -191,38 +194,14 @@ function plot1(rp::RamseyPath)
     tt = 1:length(rp.mu)  # tt is used to make the plot time index correct.
     y = rp.y
 
-    n_rows = 3
-    fig, axes = subplots(n_rows, 1, figsize=(10, 12))
-
-    subplots_adjust(hspace=0.5)
-    for ax in axes
-        ax[:grid]()
-        ax[:set_xlim](0, 15)
-    end
-
-    bbox = (0., 1.02, 1., .102)
-    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => "expand")
-    p_args = Dict(:lw => 2, :alpha => 0.7)
-
-    ax = axes[1]
-    ax[:plot](tt, squeeze(y[2, :], 1), "b-", label="output"; p_args...)
-    ax[:set_ylabel](L"$Q$", fontsize=16)
-    ax[:legend](ncol=1; legend_args...)
-
-    ax = axes[2]
-    ax[:plot](tt, squeeze(y[3, :], 1), "b-", label="tax rate"; p_args...)
-    ax[:set_ylabel](L"$\tau$", fontsize=16)
-    ax[:set_yticks]((0.0, 0.2, 0.4, 0.6, 0.8))
-    ax[:legend](ncol=1; legend_args...)
-
-    ax = axes[3]
-    ax[:plot](tt, squeeze(y[4, :], 1), "b-", label="first difference in output";
-              p_args...)
-    ax[:set_ylabel](L"$u$", fontsize=16)
-    ax[:set_yticks]((0, 100, 200, 300, 400))
-    ax[:legend](ncol=1; legend_args...)
-    ax[:set_xlabel](L"time", fontsize=16)
-
+    ylabels = [L"$Q$" L"$\tau$" L"$u$"]
+    y_vals = [squeeze(y[2, :], 1) squeeze(y[3, :], 1) squeeze(y[4, :], 1)]
+    p = plot(tt, y_vals, color=:blue,
+            label=["output" "tax rate" "first difference in output"],
+            lw=2, alpha=0.7, ylabel=ylabels, layout=(3,1),
+            xlims=(0, 15), xlabel=["" "" "time"], legend=:topright,
+            xticks=0:5:15)
+     return p
 end
 
 function plot2(rp::RamseyPath)
@@ -230,49 +209,17 @@ function plot2(rp::RamseyPath)
     G, GPay = rp.G, rp.GPay
     T = length(rp.mu)
     tt = 1:T  # tt is used to make the plot time index correct.
-    tt2 = 1:T-1
+    tt2 = 0:T-1
+    tauhatdif = [NaN; tauhatdif]
 
-    n_rows = 4
-    fig, axes = subplots(n_rows, 1, figsize=(10, 16))
-
-    subplots_adjust(hspace=0.5)
-    for ax in axes
-        ax[:grid](alpha=.5)
-        ax[:set_xlim](-0.5, 15)
-    end
-
-    bbox = (0., 1.02, 1., .102)
-    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => "expand")
-    p_args = Dict(:lw => 2, :alpha => 0.7)
-
-    ax = axes[1]
-    ax[:plot](tt2, tauhatdif,
-              label="time inconsistency differential for tax rate"; p_args...)
-    ax[:set_ylabel](L"$\Delta\tau$", fontsize=16)
-    ax[:set_yticks]((0.0, 0.4, 0.8, 1.2))
-    ax[:legend](ncol=1; legend_args...)
-
-    ax = axes[2]
-    ax[:plot](tt, uhatdif,
-              label=L"time inconsistency differential for $u$"; p_args...)
-    ax[:set_ylabel](L"$\Delta u$", fontsize=16)
-    ax[:set_yticks]((-3.0, -2.0, -1.0, 0.0))
-    ax[:legend](ncol=1; legend_args...)
-
-    ax = axes[3]
-    ax[:plot](tt, mu, label="Lagrange multiplier"; p_args...)
-    ax[:set_ylabel](L"$\mu$", fontsize=16)
-    ax[:set_yticks]((2.34e-3, 2.43e-3, 2.52e-3))
-    ax[:legend](ncol=1; legend_args...)
-
-    ax = axes[4]
-    ax[:plot](tt, G, label="government revenue"; p_args...)
-    ax[:set_ylabel](L"$G$", fontsize=16)
-    ax[:set_yticks]((9200, 9400, 9600, 9800))
-    ax[:legend](ncol=1; legend_args...)
-
-    ax[:set_xlabel](L"time", fontsize=16)
-
+    x_vals = [tt2 tt tt tt]
+    y_vals = [tauhatdif uhatdif mu G]
+    ylabels = [L"$\Delta\tau$" L"$\Delta u$" L"$\mu$" L"$G$"]
+    labels = ["time inconsistency differential for tax rate" L"time inconsistency differential for $u$" "Lagrange multiplier" "government revenue"]
+    p = plot(x_vals, y_vals, ylabel=ylabels, label=labels,
+             layout=(4, 1), xlims=(-0.5, 15), lw=2, alpha=0.7,
+             legend=:topright, color=:blue, xlabel=["" "" "" "time"])
+    return p
 end
 
 
