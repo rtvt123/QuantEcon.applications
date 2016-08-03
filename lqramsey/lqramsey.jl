@@ -20,7 +20,7 @@ http://quant-econ.net/lqramsey.html
 
 =#
 using QuantEcon
-using PyPlot
+using PlotlyJS
 
 abstract AbstractStochProcess
 
@@ -171,7 +171,7 @@ function compute_paths(econ::Economy{ContStochProcess}, T)
 
     # Generate an initial condition x0 satisfying x0 = A x0
     nx, nx = size(A)
-    x0 = null((eye(nx) - A))
+    x0 = nullspace((eye(nx) - A))
     x0 = x0[end] < 0 ? -x0 : x0
     x0 = x0 ./ x0[end]
     x0 = squeeze(x0, 2)
@@ -224,71 +224,47 @@ end
 function gen_fig_1(path::Path)
     T = length(path.c)
 
-    num_rows, num_cols = 2, 2
-    fig, axes = subplots(num_rows, num_cols, figsize=(14, 10))
-    subplots_adjust(hspace=0.4)
-    for i=1:num_rows
-        for j=1:num_cols
-            axes[i, j][:grid]()
-            axes[i, j][:set_xlabel]("Time")
-        end
-    end
-
-    bbox = (0., 1.02, 1., .102)
-    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => :expand)
-    p_args = Dict(:lw => 2, :alpha => 0.7)
+    tr1, tr2, tr4 = GenericTrace[], GenericTrace[], GenericTrace[]
 
     # Plot consumption, govt expenditure and revenue
-    ax = axes[1, 1]
-    ax[:plot](path.rvn, label=L"$\tau_t \ell_t$"; p_args...)
-    ax[:plot](path.g, label=L"$g_t$"; p_args...)
-    ax[:plot](path.c, label=L"$c_t$"; p_args...)
-    ax[:legend](ncol=3; legend_args...)
+    push!(tr1, scatter(; y = path.rvn, legendgroup = "rev", marker_color = "blue", name = L"$\tau_t \ell_t$"))
+    push!(tr1, scatter(; y = path.g, legendgroup = "gov", marker_color = "red", name = L"$g_t$"))
+    push!(tr1, scatter(; y = path.c, marker_color = "green",name = L"$c_t$"))
 
     # Plot govt expenditure and debt
-    ax = axes[1, 2]
-    ax[:plot](1:T, path.rvn, label=L"$\tau_t \ell_t$"; p_args...)
-    ax[:plot](1:T, path.g, label=L"$g_t$"; p_args...)
-    ax[:plot](1:T-1, path.B[2:end], label=L"$B_{t+1}$"; p_args...)
-    ax[:legend](ncol=3; legend_args...)
+    push!(tr2, scatter(; x = 1:T, y = path.rvn, legendgroup = "rev", marker_color = "blue", showlegend = false, name = L"$\tau_t \ell_t$"))
+    push!(tr2, scatter(; x = 1:T, y = path.g, legendgroup = "gov", marker_color = "red", showlegend = false, name = L"$g_t$"))
+    push!(tr2, scatter(; x = 1:T-1, y = path.B[2:end], marker_color = "orange", name = L"$B_{t+1}$"))
 
     # Plot risk free return
-    ax = axes[2, 1]
-    ax[:plot](1:T, path.R - 1, label=L"$R_{t - 1}$"; p_args...)
-    ax[:legend](ncol=1; legend_args...)
+    tr3 = scatter(; x =1:T, y = path.R - 1, marker_color = "pink", name = L"$R_{t - 1}$")
 
     # Plot revenue, expenditure and risk free rate
-    ax = axes[2, 2]
-    ax[:plot](1:T, path.rvn, label=L"$\tau_t \ell_t$"; p_args...)
-    ax[:plot](1:T, path.g, label=L"$g_t$"; p_args...)
-    ax[:plot](1:T-1, path.pi, label=L"$\pi_{t+1}$"; p_args...)
-    ax[:legend](ncol=3; legend_args...)
-end
+    push!(tr4, scatter(; x = 1:T, y = path.rvn, legendgroup = "rev", marker_color = "blue",  showlegend = false, name = L"$\tau_t \ell_t$"))
+    push!(tr4, scatter(; x = 1:T, y = path.g, legendgroup = "gov", marker_color = "red", showlegend = false, name = L"$g_t$"))
+    push!(tr4, scatter(; x = 1:T-1, y = path.pi, marker_color = "violet", name = L"$\pi_{t+1}$"))
 
+    p1 = plot(tr1)
+    p2 = plot(tr2)
+    p3 = plot(tr3, Layout(; xaxis_title = "Time"))
+    p4 = plot(tr4, Layout(; xaxis_title = "Time"))
+    p = [p1 p2; p3 p4]
+    relayout!(p, height = 900)
+
+    p
+end
 
 function gen_fig_2(path::Path)
     T = length(path.c)
 
-    # Prepare axes
-    num_rows, num_cols = 2, 1
-    fig, axes = subplots(num_rows, num_cols, figsize=(10, 10))
-    subplots_adjust(hspace=0.5)
-    bbox = (0., 1.02, 1., .102)
-    legend_args = Dict(:bbox_to_anchor => bbox, :loc => 3, :mode => :expand)
-    p_args = Dict(:lw => 2, :alpha => 0.7)
-
     # Plot adjustment factor
-    ax = axes[1]
-    ax[:plot](2:T, path.xi, label=L"$\xi_t$"; p_args...)
-    ax[:grid]()
-    ax[:set_xlabel]("Time")
-    ax[:legend](ncol=1; legend_args...)
+    p1 = plot(scatter(; x = 2:T, y = path.xi, name = L"$\xi_t$"))
 
     # Plot adjusted cumulative return
-    ax = axes[2]
-    ax[:plot](2:T, path.Pi, label=L"$\Pi_t$"; p_args...)
-    ax[:grid]()
-    ax[:set_xlabel]("Time")
-    ax[:legend](ncol=1; legend_args...)
+    p2 = plot(scatter(; x = 2:T, y = path.Pi, name = L"$\Pi_t$"), Layout(; xaxis_title = "Time"))
 
+    p = [p1; p2]
+    relayout!(p, height = 600)
+
+    p
 end
