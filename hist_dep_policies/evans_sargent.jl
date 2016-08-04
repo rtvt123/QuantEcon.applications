@@ -40,7 +40,7 @@ type HistDepRamsey
     # These are the LQ fields and stationary values
     R::Matrix
     A::Matrix
-    B::Matrix
+    B::Array
     Q::Real
     P::Matrix
     F::Matrix
@@ -72,7 +72,7 @@ function HistDepRamsey(A0, A1, d, Q0, tau0, mu, bet)
          0.0   0.0  0.0  0.0
          -A0/d A1/d 0.0  A1/d+1.0/bet]
 
-    B = [0.0 0.0 1.0 1.0/d]'
+    B = [0.0; 0.0; 1.0; 1.0/d]
 
     Q = 0.0
 
@@ -180,7 +180,7 @@ function compute_ramsey_path!(hdr::HistDepRamsey, rp::RamseyPath)
         P22temp = P[4, 4]
         uhat[t] = (-P22temp^(-1) .* P21temp * y[1:3, t])[1]
 
-        yhat = (Atemp-Btemp * Ftemp) * [y[1:3, t-1], uhat[t-1]]
+        yhat = (Atemp-Btemp * Ftemp) * [y[1:3, t-1]; uhat[t-1]]
         tauhat[t] = yhat[3]
         tauhatdif[t-1] = tauhat[t] - y[3, t]
         uhatdif[t] = uhat[t] - y[3, t]
