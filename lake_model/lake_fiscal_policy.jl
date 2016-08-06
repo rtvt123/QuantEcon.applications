@@ -94,20 +94,21 @@ function find_balanced_budget_tax(c::Float64)
 end
 
 # Levels of unemployment insurance we wish to study
-c_vec = linspace(5.0, 140.0, 60)
+Nc = 60
+c_vec = linspace(5.0, 140.0, Nc)
 
-tax_vec = []
-unempl_vec = []
-empl_vec = []
-welfare_vec = []
+tax_vec = Array(Float64, Nc, 1)
+unempl_vec = Array(Float64, Nc, 1)
+empl_vec = Array(Float64, Nc, 1)
+welfare_vec = Array(Float64, Nc, 1)
 
-for c in c_vec
-  t = find_balanced_budget_tax(c)
-  e_rate, u_rate, welfare = compute_steady_state_quantities(c, t)
-  push!(tax_vec, t)
-  push!(unempl_vec, u_rate)
-  push!(empl_vec, e_rate)
-  push!(welfare_vec, welfare)
+for i = 1:Nc
+  t = find_balanced_budget_tax(c_vec[i])
+  e_rate, u_rate, welfare = compute_steady_state_quantities(c_vec[i], t)
+  tax_vec[i] = t
+  unempl_vec[i] = u_rate
+  empl_vec[i] = e_rate
+  welfare_vec[i] = welfare
 end
 
 titles = ["Unemployment" "Employment" "Tax" "Welfare"]

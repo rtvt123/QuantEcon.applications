@@ -63,7 +63,7 @@ function rate_steady_state(lm::LakeModel, tol=1e-6)
     error = tol + 1
     while (error > tol)
         new_x = lm.A_hat * x
-        error = maximum(abs(new_x - x))
+        error = maxabs(new_x - x)
         x = new_x
     end
     return x
