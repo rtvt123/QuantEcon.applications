@@ -14,30 +14,30 @@ function u(c, sigma)
     else
         return -10e6
     end
-end    
+end
 
 # default wage vector with probabilities
 
-n = 60                                   # n possible outcomes for wage
-default_w_vec = linspace(10, 20, n)   # wages between 10 and 20
-a, b = 600, 400                          # shape parameters
-dist = BetaBinomial(n-1, a, b)
-default_p_vec = pdf(dist)  
+const n = 60                                   # n possible outcomes for wage
+const default_w_vec = linspace(10, 20, n)   # wages between 10 and 20
+const a, b = 600, 400                          # shape parameters
+const dist = BetaBinomial(n-1, a, b)
+const default_p_vec = pdf(dist)
 
 
 type McCallModel
-    alpha :: Float64        # Job separation rate
-    beta :: Float64         # Discount rate
-    gamma :: Float64        # Job offer rate
-    c :: Float64            # Unemployment compensation
-    sigma :: Float64        # Utility parameter
-    w_vec :: Array{Float64} # Possible wage values
-    p_vec :: Array{Float64} # Probabilities over w_vec
+    alpha::Float64        # Job separation rate
+    beta::Float64         # Discount rate
+    gamma::Float64        # Job offer rate
+    c::Float64            # Unemployment compensation
+    sigma::Float64        # Utility parameter
+    w_vec::Vector{Float64} # Possible wage values
+    p_vec::Vector{Float64} # Probabilities over w_vec
 
-    function McCallModel(alpha=0.2, 
+    function McCallModel(alpha=0.2,
                          beta=0.98,
                          gamma=0.7,
-                         c=6.0,   
+                         c=6.0,
                          sigma=2.0,
                          w_vec=default_w_vec,
                          p_vec=default_p_vec)
@@ -62,18 +62,18 @@ function update_bellman!(mcm, V, V_new, U)
         V_new[w_idx] = u(w, sigma) + beta * ((1 - alpha) * V[w_idx] + alpha * U)
     end
 
-    U_new = u(c, sigma) + beta * (1 - gamma) * U + 
+    U_new = u(c, sigma) + beta * (1 - gamma) * U +
                     beta * gamma * sum(max(U, V) .* mcm.p_vec)
 
     return U_new
 end
 
 
-function solve_mccall_model(mcm; tol=1e-5, max_iter=2000)
+function solve_mccall_model(mcm; tol::Float64=1e-5, max_iter::Int=2000)
 
     V = ones(length(mcm.w_vec))  # Initial guess of V
     V_new = similar(V)           # To store updates to V
-    U = 1                        # Initial guess of U
+    U = 1.0                        # Initial guess of U
     i = 0
     error = tol + 1
 
@@ -89,4 +89,3 @@ function solve_mccall_model(mcm; tol=1e-5, max_iter=2000)
 
     return V, U
 end
-
