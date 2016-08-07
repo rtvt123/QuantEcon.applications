@@ -31,13 +31,12 @@ pdf_logw = cdf_logw[2:end] - cdf_logw[1:end-1]
 p_vec = pdf_logw ./ sum(pdf_logw)
 w_vec = (w_vec[1:end-1] + w_vec[2:end]) / 2
 
+"""
+Compute the reservation wage, job finding rate and value functions of the
+workers given c and tau.
+
+"""
 function compute_optimal_quantities(c::Float64, tau::Float64)
-  """
-  Compute the reservation wage, job finding rate and value functions of the
-  workers given c and tau.
-
-  """
-
   mcm = McCallModel(alpha_q,
                     beta,
                     gamma,
@@ -53,15 +52,13 @@ function compute_optimal_quantities(c::Float64, tau::Float64)
   return w_bar, lmda, V, U
 end
 
+"""
+Compute the steady state unemployment rate given c and tau using optimal
+quantities from the McCall model and computing corresponding steady state
+quantities
 
+"""
 function compute_steady_state_quantities(c::Float64, tau::Float64)
-  """
-  Compute the steady state unemployment rate given c and tau using optimal
-  quantities from the McCall model and computing corresponding steady state
-  quantities
-
-  """
-
   w_bar, lmda, V, U = compute_optimal_quantities(c, tau)
 
   # Compute steady state employment and unemployment rates
@@ -76,13 +73,11 @@ function compute_steady_state_quantities(c::Float64, tau::Float64)
   return e_rate, u_rate, welfare
 end
 
+"""
+Find tax level that will induce a balanced budget.
 
+"""
 function find_balanced_budget_tax(c::Float64)
-  """
-  Find tax level that will induce a balanced budget.
-
-  """
-
   function steady_state_budget(t::Float64)
     e_rate, u_rate, w = compute_steady_state_quantities(c, t)
     return t - u_rate * c
