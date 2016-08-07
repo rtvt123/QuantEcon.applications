@@ -83,9 +83,9 @@ Simulates the the sequence of Employment and Unemployent stocks
 
 """
 
-function simulate_stock_path(lm::LakeModel, X0::Array, T::Int)
+function simulate_stock_path(lm::LakeModel, X0::Vector{Float64}, T::Int)
     X_path = Array(Float64, 2, T)
-    X = reshape(X0, 2, 1)
+    X = copy(X0)
     for t in 1:T
         X_path[:, t] = X
         X = lm.A * X
@@ -106,9 +106,9 @@ Simulates the the sequence of employment and unemployent rates.
   - X_path : contains sequence of employment and unemployment rates
 
 """
-function simulate_rate_path(lm::LakeModel, x0::Array, T::Int)
+function simulate_rate_path(lm::LakeModel, x0::Vector{Float64}, T::Int)
     x_path = Array(Float64, 2, T)
-    x = reshape(x0, 2, 1)
+    x = copy(x0)
     for t in 1:T
         x_path[:, t] = x
         x = lm.A_hat * x

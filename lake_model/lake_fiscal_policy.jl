@@ -97,10 +97,10 @@ end
 Nc = 60
 c_vec = linspace(5.0, 140.0, Nc)
 
-tax_vec = Array(Float64, Nc, 1)
-unempl_vec = Array(Float64, Nc, 1)
-empl_vec = Array(Float64, Nc, 1)
-welfare_vec = Array(Float64, Nc, 1)
+tax_vec = Array(Float64, Nc,)
+unempl_vec = Array(Float64, Nc,)
+empl_vec = Array(Float64, Nc,)
+welfare_vec = Array(Float64, Nc,)
 
 for i = 1:Nc
   t = find_balanced_budget_tax(c_vec[i])

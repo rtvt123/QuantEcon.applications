@@ -12,7 +12,7 @@ u_0 = 1 - e_0  # Initial unemployment rate
 T = 50         # Simulation length
 
 xbar = rate_steady_state(lm)
-x_0 = [e_0 u_0]
+x_0 = [e_0; u_0]
 x_path = simulate_rate_path(lm, x_0, T)
 
 titles = ["Employment rate" "Unemployment rate"]

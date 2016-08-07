@@ -15,7 +15,7 @@ T = 50         # Simulation length
 
 E_0 = e_0 * N_0
 U_0 = u_0 * N_0
-X_0 = [E_0, U_0]
+X_0 = [E_0; U_0]
 
 X_path = simulate_stock_path(lm, X_0, T)
 
