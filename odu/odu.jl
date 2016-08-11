@@ -135,7 +135,8 @@ function bellman_operator!(sp::SearchProblem, v::Matrix, out::Matrix;
     f, g, bet, c = sp.f, sp.g, sp.bet, sp.c
     nodes, weights = sp.quad_nodes, sp.quad_weights
 
-    vf = CoordInterpGrid((sp.w_grid, sp.pi_grid), v, BCnan, InterpLinear)
+    vf = extrapolate(interpolate((sp.w_grid, sp.pi_grid), v, 
+                     Gridded(Linear())), Flat())
 
     # set up quadrature nodes/weights
     # q_nodes, q_weights = qnwlege(21, 0.0, sp.w_max)
@@ -218,7 +219,8 @@ function res_wage_operator!(sp::SearchProblem, phi::Vector, out::Vector)
     f, g, bet, c = sp.f, sp.g, sp.bet, sp.c
 
     # Construct interpolator over pi_grid, given phi
-    phi_f = CoordInterpGrid(sp.pi_grid, phi, BCnearest, InterpLinear)
+    phi_f = extrapolate(interpolate((sp.pi_grid, ), phi, Gridded(Linear())),
+                        Flat())
 
     # set up quadrature nodes/weights
     q_nodes, q_weights = qnwlege(7, 0.0, sp.w_max)
