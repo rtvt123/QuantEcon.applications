@@ -1,4 +1,5 @@
-using PyPlot
+using Plots
+pyplot()
 using QuantEcon 
 
 P =[0.971 0.029 0.000
@@ -7,29 +8,26 @@ P =[0.971 0.029 0.000
 
 psi = [0.0 0.2 0.8]
 
-fig = figure()
-ax = fig[:gca](projection="3d")
-ax[:set_xlim](0, 1)
-ax[:set_ylim](0, 1)
-ax[:set_zlim](0, 1)
-ax[:set_xticks]((0.25, 0.5, 0.75))
-ax[:set_yticks]((0.25, 0.5, 0.75))
-ax[:set_zticks]((0.25, 0.5, 0.75))
-
 t = 20
-x_vals = Array(Float64, t)
-y_vals = Array(Float64, t)
-z_vals = Array(Float64, t)
+x_vals = Array(Float64, t+1)
+y_vals = Array(Float64, t+1)
+z_vals = Array(Float64, t+1)
+colors = []
 
 for i=1:t
     x_vals[i] = psi[1]
     y_vals[i] = psi[2]
     z_vals[i] = psi[3]
     psi = psi*P
+    push!(colors, :red)
 end
-
-ax[:scatter](x_vals, y_vals, z_vals, c="r", s = 60)
+push!(colors, :black)
 
 mc = MarkovChain(P)
 psi_star = stationary_distributions(mc)[1]
-ax[:scatter](psi_star[1], psi_star[2], psi_star[3], c="k", s = 60)
+x_vals[t+1] = psi_star[1]
+y_vals[t+1] = psi_star[2]
+z_vals[t+1] = psi_star[3]
+scatter(x_vals, y_vals, z_vals, color=colors)
+plot!(lims=(0, 1), ticks=[0.25 0.5 0.75]', legend=:none)
+

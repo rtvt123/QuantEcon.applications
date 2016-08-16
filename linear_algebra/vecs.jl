@@ -2,76 +2,72 @@
 Illustrates vectors in the plane.
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 @date: 07/09/2014
 =#
 
-using PyPlot
+using Plots
+pyplot()
+using LaTeXStrings
 
 
-#=
-    Create pyplot figure and axis. Move left and bottom spines to
-    intersect at origin. Remove right and top spines. Return the axis
-=#
+function plane_fig()
 
-function move_spines()
-    fix, ax = subplots()
-    for spine in ["left", "bottom"]
-        ax[:spines][spine][:set_position]("zero")
-    end
+  vecs = ([2, 4], [-3, 3], [-4, -3.5])
+  x_vals = zeros(2, length(vecs))
+  y_vals = zeros(2, length(vecs))
+  labels = []
 
-    for spine in ["right", "top"]
-        ax[:spines][spine][:set_color]("none")
-    end
-    return ax
-end
+  # Create matrices of x and y values, labels for plotting
+  for i = 1:length(vecs)
+    v = vecs[i]
+    x_vals[2, i] = v[1]
+    y_vals[2, i] = v[2]
+    labels = [labels; (1.1 * v[1], 1.1 * v[2], "$v")]
+  end
 
+  plot(x_vals, y_vals, arrow=true, color=:blue,
+       legend=:none, xlims=(-5, 5), ylims=(-5, 5),
+       annotations = labels, xticks=-5:1:5, yticks=-5:1:5)
+  vline!([0], color=:black)
+  hline!([0], color=:black)
+  plot!(foreground_color_axis=:white, foreground_color_text=:white,
+        foreground_color_border=:white)
 
-function plane_fig()  # illustrate vectors in a plane
-    ax = move_spines()
-
-    ax[:set_xlim](-5, 5)
-    ax[:set_ylim](-5, 5)
-    ax[:grid]()
-    vecs = ([2, 4], [-3, 3], [-4, -3.5])
-    for v in vecs
-        ax[:annotate](" ", xy=v, xytext=[0, 0],
-                    arrowprops=Dict("facecolor"=>"blue",
-                                "shrink"=>0,
-                                "alpha"=>0.7,
-                                "width"=>0.5))
-        ax[:text](1.1 * v[1], 1.1 * v[2], string(v))
-    end
 end
 
 
 function scalar_multiply()  # illustrate scalar multiplication
-    ax = move_spines()
-    ax[:set_xlim](-5, 5)
-    ax[:set_ylim](-5, 5)
 
-    x = [2, 2]
-    ax[:annotate](" ", xy=x, xytext=[0, 0],
-                  arrowprops=Dict("facecolor"=>"blue",
-                              "shrink"=>0,
-                              "alpha"=>1,
-                              "width"=>0.5))
+  x = [2, 2]
+  scalars = [-2, 2]
 
-    ax[:text](x[1] + 0.4, x[2] - 0.2, L"$x$", fontsize="16")
+  # Create matrices of x and y values, labels for plotting
+  x_vals = zeros(2, 1 + length(scalars))
+  y_vals = zeros(2, 1 + length(scalars))
+  labels = []
+  x_vals[2, 3] = x[1]
+  y_vals[2, 3] = x[2]
+  labels = [labels; (x[1] + 0.4, x[2] - 0.2, L"$x$")]
 
-    scalars = [-2, 2]
+  # Perform scalar multiplication, store results in plotting matrices
+  for i = 1:length(scalars)
+    s = scalars[i]
+    v = s .* x
+    x_vals[2, i] = v[1]
+    y_vals[2, i] = v[2]
+    labels = [labels; (v[1] + 0.4, v[2] - 0.2, LaTeXString("\$$s x\$"))]
+  end
 
-    for s in scalars
-        v = s .* x
-        ax[:annotate](" ", xy=v, xytext=[0, 0],
-                      arrowprops=Dict("facecolor"=>"red",
-                                  "shrink"=>0,
-                                  "alpha"=>0.5,
-                                  "width"=>0.5))
+  plot(x_vals, y_vals, arrow=true, color=[:red :red :blue],
+       legend=:none, xlims=(-5, 5), ylims=(-5, 5),
+       annotations = labels, xticks=-5:1:5, yticks=-5:1:5)
+  vline!([0], color=:black)
+  hline!([0], color=:black)
+  plot!(foreground_color_axis=:white, foreground_color_text=:white,
+        foreground_color_border=:white)
 
-        ax[:text](v[1] + 0.4, v[2] - 0.2, LaTeXString("\$$s x\$"),
-                  fontsize="16")
-    end
 end
 
 # Plot the first figure --- three vectors in the plane

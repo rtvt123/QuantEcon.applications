@@ -3,11 +3,13 @@ A first pass at solving the optimal growth problem via value function
 iteration.  A more general version is provided in optgrowth.py.
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 =#
 
 using Optim: optimize
 using Grid: CoordInterpGrid, BCnan, InterpLinear
-using PyPlot
+using Plots
+pyplot()
 
 
 ## Primitives and grid
@@ -39,20 +41,23 @@ end
 
 
 function main(n::Int=35)
-    w = 5 .* log(grid) .- 25  # An initial condition -- fairly arbitrary
-    fig, ax = subplots()
-    ax[:set_ylim](-40, -20)
-    ax[:set_xlim](minimum(grid), maximum(grid))
-    lb = "initial condition"
-    jet = ColorMap("jet")[:__call__]
-    ax[:plot](grid, w, color=jet(0), lw=2, alpha=0.6, label=lb)
+    w_init = 5 .* log(grid) .- 25  # An initial condition -- fairly arbitrary
+    w = copy(w_init)
 
+    ws = []
+    colors = []
     for i=1:n
         w = bellman_operator(grid, w)
-        ax[:plot](grid, w, color=jet(i/n), lw=2, alpha=0.6)
+        push!(ws, w)
+        push!(colors, RGBA(0, 0, 0, i/n))
     end
-    lb = "true value function"
-    ax[:plot](grid, v_star(grid), "k-", lw=2, alpha=0.8, label=lb)
-    ax[:legend](loc="upper left")
-    Void
+
+    p = plot(grid, w_init, color=:green, linewidth=2, alpha=0.6,
+         label="initial condition")
+    plot!(grid, ws, color=colors', label="", linewidth=2)
+    plot!(grid, v_star(grid), color=:blue, linewidth=2, alpha=0.8,
+         label="true value function")
+    plot!(ylims=(-40, -20), xlims=(minimum(grid), maximum(grid)))
+
+    return p
 end
