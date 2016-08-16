@@ -1,10 +1,12 @@
 #=
 @author : Spencer Lyon
+          Victoria Gregory
 
 @date: 07/09/2014
 =#
 
-using PyPlot
+using Plots
+pyplot()
 
 const r = 0.05
 const beta = 1.0 / (1.0 + r)
@@ -36,32 +38,17 @@ end
 
 
 function main()
-    fix, axes = subplots(2, 1)
-    subplots_adjust(hspace=0.5)
-    p_args = Dict(:lw=> 2, :alpha => 0.7)
-
     L = 0.175
 
-    for ax in axes
-        ax[:grid](alpha=0.5)
-        ax[:set_xlabel]("Time")
-        ax[:set_ylim](-L, L)
-        ax[:plot]((S, S), (-L, L), "k-", lw=0.5)
-    end
+    b1, c1 = time_path(false)
+    b2, c2 = time_path(true)
+    p = plot(0:T, [c1 c2 b1 b2], layout=(2, 1),
+             color=[:green :green :blue :blue],
+             label=["consumption" "consumption" "debt" "debt"])
+    t = ["impulse-response, transitory income shock"
+         "impulse-response, permanent income shock"]
+    plot!(title=t', xlabel="Time", ylims=(-L, L), legend=[:topright :bottomright])
+    vline!([S S], color=:black, layout=(2, 1), label="")
 
-    ax = axes[1]
-    b, c = time_path(false)
-    ax[:set_title]("impulse-response, transitory income shock")
-    ax[:plot](0:T, c, "g-", label="consumption"; p_args...)
-    ax[:plot](0:T, b, "b-", label="debt"; p_args...)
-    ax[:legend](loc="upper right")
-
-    ax = axes[2]
-    b, c = time_path(true)
-    ax[:set_title]("impulse-response, permanent income shock")
-    ax[:plot](0:T, c, "g-", label="consumption"; p_args...)
-    ax[:plot](0:T, b, "b-", label="debt"; p_args...)
-    ax[:legend](loc="lower right")
-
-    return Void
+    return p
 end

@@ -2,53 +2,58 @@
 Illustrates preimages of functions
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 @date: 07/09/2014
 =#
-using PyPlot
+using Plots
+pyplot()
+using LaTeXStrings
 
 f(x) = 0.6 .* cos(4.0 .* x) .+ 1.3
 
 xmin, xmax = -1.0, 1.0
-x = linspace(xmin, xmax, 160)
+Nx = 160
+x = linspace(xmin, xmax, Nx)
 y = f(x)
 ya, yb = minimum(y), maximum(y)
 
-fig, axes = subplots(2, 1, figsize=(8, 8))
+p1 = plot(x, y, color=:black, label=[L"$f$" ""], grid=false)
+plot!(x, ya*ones(Nx, 1), fill_between=yb*ones(Nx, 1),
+     fillalpha=0.1, color=:blue, label="", lw=0)
+plot!(zeros(2, 2), [ya ya; yb yb], lw=3, color=:blue, label=[L"range of $f$" ""])
+annotate!(0.04, -0.3, L"$0$", ylims=(-0.6, 3.2))
+vline!([0], color=:black, label="")
+hline!([0], color=:black, label="")
+plot!(foreground_color_axis=:white, foreground_color_text=:white,
+      foreground_color_border=:white)
 
-for ax in axes
-    for spine in ["left", "bottom"]
-        ax[:spines][spine][:set_position]("zero")
-    end
-
-    for spine in ["right", "top"]
-        ax[:spines][spine][:set_color]("none")
-    end
-
-    ax[:set_xlim](xmin, xmax)
-    ax[:set_ylim](-0.6, 3.2)
-    ax[:set_xticks]([])
-    ax[:set_yticks]([])
-
-    ax[:plot](x, y, "k-", lw=2, label=L"$f$")
-    ax[:fill_between](x, ya, yb, facecolor="blue", alpha=0.05)
-    ax[:vlines]([0], ya, yb, lw=3, color="blue", label=L"range of $f$")
-    ax[:text](0.04, -0.3, L"$0$", fontsize=16)
-end
-
-ax = axes[1]
-ax[:legend](loc="upper right", frameon=false)
 ybar = 1.5
-ax[:plot](x, x .* 0 .+ ybar, "k--", alpha=0.5)
-ax[:text](0.05, 0.8 * ybar, L"$y$", fontsize=16)
+plot!(x, x .* 0 .+ ybar, color=:black, linestyle=:dash, label="")
+annotate!(0.05, 0.8 * ybar, L"$y$")
 
+x_vals = Array(Float64, 2, 4)
+y_vals = Array(Float64, 2, 4)
+labels = []
 for (i, z) in enumerate([-0.35, 0.35])
-    ax[:vlines](z, 0, f(z), linestyle="--", alpha=0.5)
-    ax[:text](z, -0.2, LaTeXString("\$x_$i\$"), fontsize=16)
+  x_vals[:, 2*i-1] = z*ones(2, 1)
+  y_vals[2, 2*i-1] = f(z)
+  labels = [labels; (z, -0.2, LaTeXString("\$x_$i\$"))]
 end
+plot!(x_vals, y_vals, color=:black, linestyle=:dash, label="", annotation=labels)
 
-ax = axes[2]
+p2 = plot(x, y, color=:black, label=[L"$f$" ""], grid=false)
+plot!(x, ya*ones(Nx, 1), fill_between=yb*ones(Nx, 1),
+     fillalpha=0.1, color=:blue, label="", lw=0)
+plot!(zeros(2, 2), [ya ya; yb yb], lw=3, color=:blue, label=[L"range of $f$" ""])
+annotate!(0.04, -0.3, L"$0$", ylims=(-0.6, 3.2))
+vline!([0], color=:black, label="")
+hline!([0], color=:black, label="")
+plot!(foreground_color_axis=:white, foreground_color_text=:white,
+      foreground_color_border=:white)
 
 ybar = 2.6
-ax[:plot](x, x * 0 + ybar, "k--", alpha=0.5)
-ax[:text](0.04, 0.91 * ybar, L"$y$", fontsize=16)
+plot!(x, x .* 0 .+ ybar, color=:black, linestyle=:dash, legend=:none)
+annotate!(0.04, 0.91 * ybar, L"$y$")
+
+plot(p1, p2, layout=(2, 1), size=(600,700))
