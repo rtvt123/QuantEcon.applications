@@ -17,7 +17,7 @@ P = [(1 - lambda) lambda; alpha (1 - alpha)]
 mc = MarkovChain(P, [0; 1])     # 0=unemployed, 1=employed
 xbar = rate_steady_state(lm)
 
-s_path = simulate_values(mc, T, 2)
+s_path = simulate(mc, T; init=2)
 s_bar_e = cumsum(s_path) ./ (1:T)
 s_bar_u = 1 - s_bar_e
 s_bars = [s_bar_u s_bar_e]
