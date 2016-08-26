@@ -287,7 +287,7 @@ function QuantEcon.simulate(ae::ArellanoEconomy, capT::Int=5000;
 
     # Create a QE MarkovChain
     mc = MarkovChain(ae.Π)
-    y_sim_indices = simulate(mc, capT+1, y_init_ind)
+    y_sim_indices = simulate(mc, capT+1; init=y_init_ind)
 
     # Allocate and Fill output
     y_sim_val = Array(Float64, capT+1)
