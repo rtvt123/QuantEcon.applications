@@ -19,10 +19,9 @@ def expect_loss_choose_1(p, L1):
 
 def EJ(p, f0, f1, J):
     """
-    We will need to be able to evaluate the expectation of our value function
-    J. In order to do this, we need the current probability
-    that model 0 is correct (p), the distributions (f0, f1), and a
-    function that can evaluate the Bellman equation
+    Evaluates the expectation of our value function J. To do this, we
+    need the current probability that model 0 is correct (p), the
+    distributions (f0, f1), and the function J.
     """
     # Get the current distribution we believe (p*f0 + (1-p)*f1)
     curr_dist = p*f0 + (1-p)*f1
@@ -44,9 +43,9 @@ def bellman_operator(pgrid, c, f0, f1, L0, L1, J):
     Evaluates the value function for a given continuation value
     function; that is, evaluates
 
-        J(p) = min(pL0, (1-p)L1, c + E[J(p')])
+        J(p) = min((1 - p) L0, p L1, c + E J(p'))
 
-    Uses linear interpolation between points
+    Uses linear interpolation between points.
     """
     m = np.size(pgrid)
     assert m == np.size(J)
