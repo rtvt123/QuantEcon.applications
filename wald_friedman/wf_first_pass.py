@@ -63,16 +63,24 @@ def bellman_operator(pgrid, c, f0, f1, L0, L1, J):
 
     return J_out
 
-# To solve, first set up distributions
+
+#  == Now run at given parameters == #
+
+#  First set up distributions 
 p_m1 = np.linspace(0, 1, 50)
 f0 = np.clip(st.beta.pdf(p_m1, a=1, b=1), 1e-8, np.inf)
 f0 = f0 / np.sum(f0)
 f1 = np.clip(st.beta.pdf(p_m1, a=9, b=9), 1e-8, np.inf)
 f1 = f1 / np.sum(f1)
 
-# Now iterate on the Bellman operator from an initial guess
+# Build a grid
 pg = np.linspace(0, 1, 251)
+# Turn the Bellman operator into a function with one argument
 bell_op = lambda vf: bellman_operator(pg, 0.5, f0, f1, 5.0, 5.0, vf)
-J = qe.compute_fixed_point(bell_op, np.zeros(pg.size), error_tol=1e-6,
-                           verbose=True, print_skip=5)
+# Pass it to qe's built in iteration routine
+J = qe.compute_fixed_point(bell_op, 
+                            np.zeros(pg.size),  # Initial guess
+                            error_tol=1e-6, 
+                            verbose=True, 
+                            print_skip=5)
 
