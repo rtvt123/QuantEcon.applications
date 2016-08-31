@@ -1,5 +1,6 @@
 #=
 Filename: aiyagari_compute_equilibrium.jl
+Author: Victoria Gregory
 Date: 8/30/2016
 
 Draws the aggregate supply and demand curves for
@@ -22,7 +23,7 @@ delta = 0.05
 Compute wage rate given an interest rate, r
 """
 function r_to_w(r::Float64)
-    return A * (1 - alpha) * (A * alpha / r + delta) ^ (alpha / (1 - alpha))
+    return A * (1 - alpha) * (A * alpha / (r + delta)) ^ (alpha / (1 - alpha))
 end
 
 """
@@ -61,7 +62,7 @@ function prices_to_capital_stock(am::Household, r::Float64)
 end
 
 # Create an instance of Household
-z_chain = MarkovChain([0.67 0.33; 0.33 0.67], [1.0, 2.0])
+z_chain = MarkovChain([0.67 0.33; 0.33 0.67], [0.5, 1.5])
 am = Household(z_chain=z_chain, beta=beta, a_max=20.0)
 
 # Create a grid of r values at which to compute demand and supply of capital
