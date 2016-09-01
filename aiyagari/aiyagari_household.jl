@@ -33,7 +33,7 @@ type Household
     r::Float64
     w::Float64
     beta::Float64
-    z_chain::MarkovChain
+    z_chain::MarkovChain{Float64,Array{Float64,2},Array{Float64,1}}
     a_min::Float64
     a_max::Float64
     a_size::Int64
@@ -60,8 +60,9 @@ Constructor for `Household`
 
 """
 function Household(;r::Float64=0.01, w::Float64=1.0, beta::Float64=0.96, 
-                   z_chain::MarkovChain=MarkovChain([0.9 0.1; 0.1 0.9], [0.1; 1.0]),
-                   a_min::Float64=1e-10, a_max::Float64=18.0, a_size::Int64=200)
+                   z_chain::MarkovChain{Float64,Array{Float64,2},Array{Float64,1}}
+                   =MarkovChain([0.9 0.1; 0.1 0.9], [0.1; 1.0]), a_min::Float64=1e-10, 
+                   a_max::Float64=18.0, a_size::Int64=200)
     
     # set up grids
     a_vals = linspace(a_min, a_max, a_size)
@@ -86,7 +87,7 @@ function Household(;r::Float64=0.01, w::Float64=1.0, beta::Float64=0.96,
     end
 
     # placeholder for R
-    R = -Inf.*ones(n, a_size)
+    R = fill(-Inf, n, a_size)
     h = Household(r, w, beta, z_chain, a_min, a_max, a_size, 
                   a_vals, z_size, n, s_vals, s_i_vals, R, Q)
 
