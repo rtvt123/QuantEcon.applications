@@ -1,7 +1,11 @@
+""" 
+Code for simulating, visualizing and manipulating additive and
+multiplicative functionals.
+
+@authors: Chase Coleman, Balint Skoze, Tom Sargent
+
 """
-This file contains a class which transforms an additive (multipilcative)
-functional into a QuantEcon linear state space system.
-"""
+
 import numpy as np
 import scipy as sp
 import scipy.linalg as la
@@ -10,10 +14,12 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm, lognorm
 
 
-class AMF_LSS_VAR(object):
+class AMF_LSS_VAR:
     """
-    Insert clever documentation ehre
+    This class transforms an additive (multipilcative)
+    functional into a QuantEcon linear state space system.
     """
+
     def __init__(self, A, B, D, F=None, nu=None):
         # Unpack required elements
         self.nx, self.nk = B.shape
@@ -86,7 +92,7 @@ class AMF_LSS_VAR(object):
         A2 = np.hstack([1, 1, nx0r, ny0r, ny0r])            # Transition for t
         A3 = np.hstack([nx0c, nx0c, A, nyx0m.T, nyx0m.T])   # Transition for x_{t+1}
         A4 = np.hstack([nu, ny0c, D, ny1m, ny0m])           # Transition for y_{t+1}
-        A5 = np.hstack([ny0c, ny0c, nyx0m, ny0m, ny1m])     # Transition for m_{t+!}
+        A5 = np.hstack([ny0c, ny0c, nyx0m, ny0m, ny1m])     # Transition for m_{t+1}
         Abar = np.vstack([A1, A2, A3, A4, A5])
 
         # Build B matrix for LSS
@@ -113,7 +119,7 @@ class AMF_LSS_VAR(object):
 
     def additive_decomp(self):
         """
-        Return values for the martingale decomposition (Proposition 4.3.3.)
+        Return values for the martingale decomposition 
             - nu        : unconditional mean difference in Y
             - H         : coefficient for the (linear) martingale component (kappa_a)
             - g         : coefficient for the stationary component g(x)
