@@ -94,7 +94,7 @@ function bellman_operator!(cp::ConsumerProblem, V::Matrix, out::Matrix;
     vf = interpolate(cp, V)
 
     # compute lower_bound for optimization
-    opt_lb = minimum(z_vals) - 1e-5
+    opt_lb = 1e-8
 
     # solve for RHS of Bellman equation
     for (i_z, z) in enumerate(z_vals)
@@ -179,7 +179,7 @@ function coleman_operator!(cp::ConsumerProblem, c::Matrix, out::Matrix)
     cf!(a, vals) = map!(i->cf[a, i], vals, 1:z_size)
 
     # compute lower_bound for optimization
-    opt_lb = minimum(z_vals) - 1e-2
+    opt_lb = 1e-8
 
     for (i_z, z) in enumerate(z_vals)
         for (i_a, a) in enumerate(asset_grid)

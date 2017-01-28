@@ -11,21 +11,25 @@ from aiyagari_household import Household, asset_marginal
 from quantecon.markov import DiscreteDP
 
 
-A = 2.5
-N = 0.05
+A = 1.0
+N = 1.0
 alpha = 0.33
 beta = 0.96
+delta = 0.05
 
 
 def r_to_w(r):
-    return A * (1 - alpha) * (alpha / (1 +r))**(alpha / (1 - alpha))
+    """
+    Equilibrium wages associated with a given interest rate r.
+    """
+    return A * (1 - alpha) * (A * alpha / (r + delta))**(alpha / (1 - alpha))
 
 def rd(K):
     """
     Inverse demand curve for capital.  The interest rate associated with a
     given demand for capital K.
     """
-    return A * alpha * (N / K)**(1 - alpha)
+    return A * alpha * (N / K)**(1 - alpha) - delta
 
 
 def prices_to_capital_stock(am, r):

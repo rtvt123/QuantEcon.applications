@@ -7,7 +7,7 @@ iteration.  A more general version is provided in optgrowth.py.
 =#
 
 using Optim: optimize
-using Grid: CoordInterpGrid, BCnan, InterpLinear
+using Interpolations
 using Plots
 pyplot()
 
@@ -27,7 +27,7 @@ v_star(k) = c1 .+ c2 .* log(k)
 
 
 function bellman_operator(grid, w)
-    Aw = CoordInterpGrid(grid, w, BCnan, InterpLinear)
+    Aw = scale(interpolate(w, BSpline(Linear()), OnGrid()), grid)
 
     Tw = zeros(w)
 
