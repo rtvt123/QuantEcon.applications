@@ -5,7 +5,7 @@ Authors: John Stachurski, Thomas Sargent
 Solving the optimal growth problem via value function iteration.  The model is
 described in 
 
-    http://quant-econ.net/py/optgrowth_2.html
+    http://quant-econ.net/py/optgrowth.html
 """
 
 import numpy as np
