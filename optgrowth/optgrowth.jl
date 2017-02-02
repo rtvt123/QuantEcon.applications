@@ -1,9 +1,9 @@
 #=
 Solving the optimal growth problem via value function iteration.
 
-@authors : Spencer Lyon <spencer.lyon@nyu.edu>
+@authors : Spencer Lyon,
 
-@date : 2014-07-05
+@date : Thu Feb 2 14:39:36 AEDT 2017
 
 References
 ----------
