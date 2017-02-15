@@ -5,7 +5,7 @@ Authors: John Stachurski, Thomas Sargent
 Solving the optimal growth problem via value function iteration.  The model is
 described in 
 
-    http://quant-econ.net/py/optgrowth_2.html
+    http://quant-econ.net/py/optgrowth.html
 """
 
 import numpy as np
@@ -27,6 +27,8 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
         The value of the input function on different grid points
     grid : array_like(float, ndim=1)
         The set of grid points
+    beta : scalar
+        The discount factor
     u : function
         The utility function
     f : function
@@ -34,8 +36,6 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
     shocks : numpy array
         An array of draws from the shock, for Monte Carlo integration (to
         compute expectations).
-    beta : scalar
-        The discount factor
     Tw : array_like(float, ndim=1) optional (default=None)
         Array to write output values to
     compute_policy : Boolean, optional (default=False)
@@ -47,10 +47,10 @@ def bellman_operator(w, grid, beta, u, f, shocks, Tw=None, compute_policy=0):
 
     # == Initialize Tw if necessary == #
     if Tw is None:
-        Tw = np.empty(len(w))
+        Tw = np.empty_like(w)
 
     if compute_policy:
-        sigma = np.empty(len(w))
+        sigma = np.empty_like(w)
 
     # == set Tw[i] = max_c { u(c) + beta E w(f(y  - c) z)} == #
     for i, y in enumerate(grid):

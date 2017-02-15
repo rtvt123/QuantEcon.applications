@@ -1,134 +1,89 @@
 #=
 Solving the optimal growth problem via value function iteration.
 
-@author : Spencer Lyon <spencer.lyon@nyu.edu>
+@authors : Spencer Lyon,
 
-@date : 2014-07-05
+@date : Thu Feb 2 14:39:36 AEDT 2017
 
 References
 ----------
+    
+https://lectures.quantecon.org/jl/optgrowth.html
 
-Simple port of the file quantecon.models.optgrowth
-
-http://quant-econ.net/jl/dp_intro.html
 =#
 
-#=
-    This type defines the primitives representing the growth model. The
-    default values are
-
-        f(k) = k**alpha, i.e, Cobb-Douglas production function
-        u(c) = ln(c), i.e, log utility
-
-    See the constructor below for details
-=#
 using Interpolations
 using Optim
 
-"""
-Neoclassical growth model
-
-##### Fields
-
-- `f::Function` : Production function
-- `bet::Real` : Discount factor in (0, 1)
-- `u::Function` : Utility function
-- `grid_max::Int` : Maximum for grid over savings values
-- `grid_size::Int` : Number of points in grid for savings values
-- `grid::LinSpace{Float64}` : The grid for savings values
 
 """
-type GrowthModel
-    f::Function
-    bet::Float64
-    u::Function
-    grid_max::Int
-    grid_size::Int
-    grid::LinSpace{Float64}
+A function that takes two arrays and returns a function that approximates the
+data using continuous piecewise linear interpolation.
+
+"""
+function lin_interp(x_vals::Vector{Float64}, y_vals::Vector{Float64})
+    # == linear interpolation inside grid == #
+    w = interpolate((x_vals,), y_vals,  Gridded(Linear()))
+    # == constant values outside grid == #
+    w = extrapolate(w,  Interpolations.Flat())
+    return w
 end
 
 
-default_f(k) = k^0.65
-default_u(c) = log(c)
+"""
+The approximate Bellman operator, which computes and returns the
+updated value function Tw on the grid points.  An array to store
+the new set of values Tw is optionally supplied (to avoid having to
+allocate new arrays at each iteration).  If supplied, any existing data in 
+Tw will be overwritten.
+
+#### Arguments
+
+w : array_like(float, ndim=1)
+    The value of the input function on different grid points
+grid : array_like(float, ndim=1)
+    The set of grid points
+u : function
+    The utility function
+f : function
+    The production function
+shocks : numpy array
+    An array of draws from the shock, for Monte Carlo integration (to
+    compute expectations).
+beta : scalar
+    The discount factor
+Tw : array_like(float, ndim=1) optional (default=None)
+    Array to write output values to
+compute_policy : Boolean, optional (default=False)
+    Whether or not to compute policy function
 
 """
-Constructor of `GrowthModel`
+function bellman_operator(w, grid, beta, u, f, shocks; compute_policy=false)
 
-##### Arguments
+    # === Apply linear interpolation to w === #
+    w_func = lin_interp(grid, w)
+    
+    Tw = similar(w)
 
-- `f::Function(k->k^0.65)` : Production function
-- `bet::Real(0.95)` : Discount factor in (0, 1)
-- `u::Function(log)` : Utility function
-- `grid_max::Int(2)` : Maximum for grid over savings values
-- `grid_size::Int(150)` : Number of points in grid for savings values
-
-"""
-function GrowthModel(f=default_f, bet=0.95, u=default_u, grid_max=2,
-                     grid_size=150)
-    grid = linspace(1e-6, grid_max, grid_size)
-    return GrowthModel(f, bet, u, grid_max, grid_size, grid)
-end
-
-"""
-Apply the Bellman operator for a given model and initial value.
-
-##### Arguments
-
-- `g::GrowthModel` : Instance of `GrowthModel`
-- `w::Vector`: Current guess for the value function
-- `out::Vector` : Storage for output.
-- `;ret_policy::Bool(false)`: Toggles return of value or policy functions
-
-##### Returns
-
-None, `out` is updated in place. If `ret_policy == true` out is filled with the
-policy function, otherwise the value function is stored in `out`.
-
-"""
-function bellman_operator!(g::GrowthModel, w::Vector, out::Vector;
-                           ret_policy::Bool=false)
-    # Apply linear interpolation to w
-    Aw = scale(interpolate(w, BSpline(Linear()), OnGrid()), g.grid)
-
-    for (i, k) in enumerate(g.grid)
-        objective(c) = - g.u(c) - g.bet * Aw[g.f(k) - c]
-        res = optimize(objective, 1e-6, g.f(k))
-        c_star = res.minimum
-
-        if ret_policy
-            # set the policy equal to the optimal c
-            out[i] = c_star
-        else
-            # set Tw[i] equal to max_c { u(c) + beta w(f(k_i) - c)}
-            out[i] = - objective(c_star)
-        end
+    if compute_policy
+        sigma = similar(w)
     end
 
-    return out
+    # == set Tw[i] = max_c { u(c) + beta E w(f(y  - c) z)} == #
+    for (i, y) in enumerate(grid)
+        objective(c) = - u(c) - beta * mean(w_func[f(y - c) .* shocks])
+        res = optimize(objective, 1e-10, y)
+
+        if compute_policy
+            sigma[i] = res.minimum
+        end
+        Tw[i] = -res.f_minimum
+    end
+
+    if compute_policy
+        return Tw, sigma
+    else
+        return Tw
+    end
 end
 
-function bellman_operator(g::GrowthModel, w::Vector;
-                          ret_policy::Bool=false)
-    out = similar(w)
-    bellman_operator!(g, w, out, ret_policy=ret_policy)
-end
-
-"""
-Extract the greedy policy (policy function) of the model.
-
-##### Arguments
-
-- `g::GrowthModel` : Instance of `GrowthModel`
-- `w::Vector`: Current guess for the value function
-- `out::Vector` : Storage for output
-
-##### Returns
-
-None, `out` is updated in place to hold the policy function
-
-"""
-function get_greedy!(g::GrowthModel, w::Vector, out::Vector)
-    bellman_operator!(g, w, out, ret_policy=true)
-end
-
-get_greedy(g::GrowthModel, w::Vector) = bellman_operator(g, w, ret_policy=true)
