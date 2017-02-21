@@ -14,6 +14,8 @@ http://quant-econ.net/jl/odu.html
 
 =#
 
+using QuantEcon
+using Interpolations
 using Distributions
 
 """
@@ -219,14 +221,13 @@ function res_wage_operator!(sp::SearchProblem, phi::Vector, out::Vector)
     f, g, bet, c = sp.f, sp.g, sp.bet, sp.c
 
     # Construct interpolator over pi_grid, given phi
-    phi_f = extrapolate(interpolate((sp.pi_grid, ), phi, Gridded(Linear())),
-                        Flat())
+    phi_f = LinInterp(sp.pi_grid, phi)
 
     # set up quadrature nodes/weights
     q_nodes, q_weights = qnwlege(7, 0.0, sp.w_max)
 
     for (i, _pi) in enumerate(sp.pi_grid)
-        integrand(x) = max(x, phi_f[q(sp, x, _pi)]).*(_pi*f(x) + (1-_pi)*g(x))
+        integrand(x) = max(x, phi_f.(q(sp, x, _pi))).*(_pi*f(x) + (1-_pi)*g(x))
         integral = do_quad(integrand, q_nodes, q_weights)
         out[i] = (1 - bet)*c + bet*integral
     end
