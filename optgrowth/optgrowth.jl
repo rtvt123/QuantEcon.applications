@@ -1,7 +1,7 @@
 #=
 Solving the optimal growth problem via value function iteration.
 
-@authors : Spencer Lyon,
+@authors : Spencer Lyon, John Stachurski
 
 @date : Thu Feb 2 14:39:36 AEDT 2017
 
@@ -14,18 +14,6 @@ https://lectures.quantecon.org/jl/optgrowth.html
 
 using QuantEcon
 using Optim
-
-
-"""
-A function that takes two arrays and returns a function that approximates the
-data using continuous piecewise linear interpolation.
-
-"""
-function lin_interp(x_vals::Vector{Float64}, y_vals::Vector{Float64})
-    # == linear interpolation inside grid, constant values outside grid == #
-    w = LinInterp(x_vals, y_vals)
-    return w
-end
 
 
 """
@@ -59,7 +47,7 @@ compute_policy : Boolean, optional (default=False)
 function bellman_operator(w, grid, beta, u, f, shocks; compute_policy=false)
 
     # === Apply linear interpolation to w === #
-    w_func = lin_interp(grid, w)
+    w_func = LinInterp(grid, w)
     
     Tw = similar(w)
 
@@ -73,9 +61,9 @@ function bellman_operator(w, grid, beta, u, f, shocks; compute_policy=false)
         res = optimize(objective, 1e-10, y)
 
         if compute_policy
-            sigma[i] = res.minimum
+            sigma[i] = res.minimizer
         end
-        Tw[i] = -Optim.minimum(res)
+        Tw[i] = - res.minimum
     end
 
     if compute_policy
