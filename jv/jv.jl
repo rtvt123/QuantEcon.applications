@@ -13,7 +13,7 @@ http://quant-econ.net/jl/jv.html
 =#
 
 using Distributions
-using Interpolations
+using QuantEcon
 
 # NOTE: only brute-force approach is available in bellman operator. Waiting on a simple constrained optimizer to be written in pure Julia
 
