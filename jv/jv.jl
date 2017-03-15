@@ -13,7 +13,7 @@ http://quant-econ.net/jl/jv.html
 =#
 
 using Distributions
-using Interpolations
+using QuantEcon
 
 # NOTE: only brute-force approach is available in bellman operator. Waiting on a simple constrained optimizer to be written in pure Julia
 
@@ -134,7 +134,7 @@ function bellman_operator!(jv::JvWorker, V::Vector, new_V::Vector)
     nodes, weights = jv.quad_nodes, jv.quad_weights
 
     # prepare interpoland of value function
-    Vf = extrapolate(interpolate((jv.x_grid, ), V, Gridded(Linear())), Flat())
+    Vf = LinInterp(jv.x_grid, V)
 
     # instantiate the linesearch variables
     max_val = -1.0
@@ -150,12 +150,12 @@ function bellman_operator!(jv::JvWorker, V::Vector, new_V::Vector)
             function h(u)
               out = similar(u)
               for j in 1:length(u)
-                out[j] = Vf[max(G(x, phi), u[j])] * pdf(F, u[j])
+                out[j] = Vf(max(G(x, phi), u[j])) * pdf(F, u[j])
               end
               out
             end
             integral = do_quad(h, nodes, weights)
-            q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf[G(x, phi)]
+            q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf(G(x, phi))
 
             return - x * (1.0 - phi - s) - bet * q
         end
@@ -202,7 +202,7 @@ function bellman_operator!(jv::JvWorker, V::Vector, out::Tuple{Vector, Vector})
     nodes, weights = jv.quad_nodes, jv.quad_weights
 
     # prepare interpoland of value function
-    Vf = extrapolate(interpolate((jv.x_grid, ), V, Gridded(Linear())), Flat())
+    Vf = LinInterp(jv.x_grid, V)
 
     # instantiate variables
     s_policy, phi_policy = out[1], out[2]
@@ -221,12 +221,12 @@ function bellman_operator!(jv::JvWorker, V::Vector, out::Tuple{Vector, Vector})
             function h(u)
               out = similar(u)
               for j in 1:length(u)
-                out[j] = Vf[max(G(x, phi), u[j])] * pdf(F, u[j])
+                out[j] = Vf(max(G(x, phi), u[j])) * pdf(F, u[j])
               end
               out
             end
             integral = do_quad(h, nodes, weights)
-            q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf[G(x, phi)]
+            q = pi_func(s) * integral + (1.0 - pi_func(s)) * Vf(G(x, phi))
 
             return - x * (1.0 - phi - s) - bet * q
         end

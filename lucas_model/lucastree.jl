@@ -28,7 +28,6 @@ http://quant-econ.net/jl/markov_asset.html
 
 using QuantEcon
 using Distributions
-using Interpolations
 
 
 """
@@ -37,10 +36,8 @@ data using continuous piecewise linear interpolation.
 
 """
 function lin_interp(x_vals::Vector{Float64}, y_vals::Vector{Float64})
-    # == linear interpolation inside grid == #
-    w = interpolate((x_vals,), y_vals,  Gridded(Linear()))
-    # == constant values outside grid == #
-    w = extrapolate(w,  Interpolations.Flat())
+    # == linear interpolation inside grid, constant values outside grid == #
+    w = LinInterp(x_vals, y_vals)
     return w
 end
 
@@ -110,7 +107,7 @@ function lucas_operator(lt::LucasTree, f::Vector{Float64})
     Af = lin_interp(grid, f)
 
     for (i, y) in enumerate(grid)
-        Tf[i] = h[i] + beta * mean(Af[y^alpha .* z])
+        Tf[i] = h[i] + beta * mean(Af.(y^alpha .* z))
     end
     return Tf
 end

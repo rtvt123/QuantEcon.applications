@@ -10,7 +10,7 @@ class Solow:
     Implements the Solow growth model with update rule
 
     .. math::
-        k_{t+1} = \frac{s z k^{\alpha}_t}{1 + n}  + k_t \frac{1 + d}{1 + n}
+        k_{t+1} = \frac{s z k^{\alpha}_t}{1 + n}  + k_t \frac{1 - d}{1 + n}
     
     """
 

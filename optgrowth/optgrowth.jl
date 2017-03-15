@@ -1,7 +1,7 @@
 #=
 Solving the optimal growth problem via value function iteration.
 
-@authors : Spencer Lyon,
+@authors : Spencer Lyon, John Stachurski
 
 @date : Thu Feb 2 14:39:36 AEDT 2017
 
@@ -12,22 +12,8 @@ https://lectures.quantecon.org/jl/optgrowth.html
 
 =#
 
-using Interpolations
+using QuantEcon
 using Optim
-
-
-"""
-A function that takes two arrays and returns a function that approximates the
-data using continuous piecewise linear interpolation.
-
-"""
-function lin_interp(x_vals::Vector{Float64}, y_vals::Vector{Float64})
-    # == linear interpolation inside grid == #
-    w = interpolate((x_vals,), y_vals,  Gridded(Linear()))
-    # == constant values outside grid == #
-    w = extrapolate(w,  Interpolations.Flat())
-    return w
-end
 
 
 """
@@ -61,7 +47,7 @@ compute_policy : Boolean, optional (default=False)
 function bellman_operator(w, grid, beta, u, f, shocks; compute_policy=false)
 
     # === Apply linear interpolation to w === #
-    w_func = lin_interp(grid, w)
+    w_func = LinInterp(grid, w)
     
     Tw = similar(w)
 
@@ -71,13 +57,13 @@ function bellman_operator(w, grid, beta, u, f, shocks; compute_policy=false)
 
     # == set Tw[i] = max_c { u(c) + beta E w(f(y  - c) z)} == #
     for (i, y) in enumerate(grid)
-        objective(c) = - u(c) - beta * mean(w_func[f(y - c) .* shocks])
+        objective(c) = - u(c) - beta * mean(w_func.(f(y - c) .* shocks))
         res = optimize(objective, 1e-10, y)
 
         if compute_policy
-            sigma[i] = res.minimum
+            sigma[i] = res.minimizer
         end
-        Tw[i] = -res.f_minimum
+        Tw[i] = - res.minimum
     end
 
     if compute_policy
