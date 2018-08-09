@@ -1,12 +1,13 @@
 """
 Created on Wed Sep 23 17:00:17 EDT 2015
 @authors: John Stachurski, Thomas Sargent
+
 """
 
 import numpy as np
 from numba import jit
 
-class Household(object):
+class Household:
     """
     This class takes the parameters that define a household asset accumulation
     problem and computes the corresponding reward and transition matrices R

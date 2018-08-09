@@ -29,7 +29,8 @@ http://quant-econ.net/robustness.html#application
 
 =#
 using QuantEcon
-using PyPlot
+using Plots
+pyplot()
 using Grid
 
 # model parameters
@@ -89,7 +90,7 @@ end
 ## Main
 
 # compute optimal rule
-optimal_lq = LQ(Q, R, A, B, C, bet)
+optimal_lq = LQ(Q, R, A, B, C, zero(B'A), bet)
 Po, Fo, Do = stationary_values(optimal_lq)
 
 # compute robust rule for our theta
@@ -110,37 +111,22 @@ robust_best_case = value_and_entropy(emax, Fb, "best")
 optimal_worst_case = value_and_entropy(emax, Fo, "worst")
 robust_worst_case = value_and_entropy(emax, Fb, "worst")
 
-# plot results
-fig, ax = subplots()
-ax[:set_xlim](0, emax)
-ax[:set_ylabel]("Value")
-ax[:set_xlabel]("Entropy")
-ax[:grid]()
-
-for axis in ["x", "y"]
-    plt.ticklabel_format(style="sci", axis=axis, scilimits=(0,0))
-end
-
-
-plot_args = {:lw => 2, :alpha => 0.7}
-colors = ("r", "b")
-
 # we reverse order of "worst_case"s so values are ascending
 data_pairs = ((optimal_best_case, optimal_worst_case),
               (robust_best_case, robust_worst_case))
 
 egrid = linspace(0, emax, 100)
 egrid_data = Array{Float64}[]
-for (c, data_pair) in zip(colors, data_pairs)
+for data_pair in data_pairs
     for data in data_pair
         x, y = data[:, 2], data[:, 1]
         curve(z) = InterpIrregular(x, y, BCnearest, InterpLinear)[z]
-        ax[:plot](egrid, curve(egrid), color=c; plot_args...)
         push!(egrid_data, curve(egrid))
     end
 end
-ax[:fill_between](egrid, egrid_data[1], egrid_data[2],
-                  color=colors[1], alpha=0.1)
-ax[:fill_between](egrid, egrid_data[3], egrid_data[4],
-                  color=colors[2], alpha=0.1)
-plt.show()
+plot(egrid, egrid_data, color=[:red :red :blue :blue])
+plot!(egrid, egrid_data[1], fillrange=egrid_data[2],
+      fillcolor=:red, fillalpha=0.1, color=:red, legend=:none)
+plot!(egrid, egrid_data[3], fillrange=egrid_data[4],
+      fillcolor=:blue, fillalpha=0.1, color=:blue, legend=:none)
+plot!(xlabel="Entropy", ylabel="Value")

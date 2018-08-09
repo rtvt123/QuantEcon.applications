@@ -1,85 +1,53 @@
-# QuantEcon.applications Docker Image (for tmpnb orchestrate.py server & mybinder service)
-# User: econ
+# quantecon.applications Docker Image (for mybinder.org service)
+# User: main
+# Environments: Python3.5 and Julia0.3
 
-FROM debian:jessie
+FROM andrewosh/binder-base
 
 MAINTAINER Matthew McKay <mamckay@gmail.com>
 
-# Install all OS dependencies for fully functional notebook server
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-    git \
-    vim \
-    wget \
-    build-essential \
-    python-dev \
-    ca-certificates \
-    bzip2 \
-    unzip \
-    libsm6 \
-    pandoc \
-    texlive-latex-base \
+USER root
+
+#-Update Debian Base-#
+RUN apt-get update -y
+RUN apt-get install -y --no-install-recommends curl ca-certificates hdf5-tools
+
+#-Install texlive-#
+RUN apt-get update -y && apt-get install -yq --no-install-recommends \
+	texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-extra \
     texlive-fonts-recommended \
-    supervisor \
-    sudo \
     && apt-get clean
 
 # Julia dependencies
-RUN apt-get install -y julia libnettle4 && apt-get clean
+RUN apt-get install -y --no-install-recommends julia libnettle4 && apt-get clean
 
-# R dependencies that conda can't provide (X, fonts, compilers)
-RUN apt-get install -y libzmq3-dev libcurl4-openssl-dev libxrender1 fonts-dejavu gfortran gcc && apt-get clean
+#-Re-Install Conda for Python3.5 Anaconda Distributions-#
+RUN rm -r /home/main/anaconda
 
-ENV CONDA_DIR /opt/conda
+USER main
 
-# Install conda
-RUN echo 'export PATH=$CONDA_DIR/bin:$PATH' > /etc/profile.d/conda.sh && \
-    wget --quiet https://repo.continuum.io/miniconda/Miniconda3-3.9.1-Linux-x86_64.sh && \
-    /bin/bash /Miniconda3-3.9.1-Linux-x86_64.sh -b -p $CONDA_DIR && \
-    rm Miniconda3-3.9.1-Linux-x86_64.sh && \
-    $CONDA_DIR/bin/conda install --yes conda==3.14.1
+#-NOTE: $HOME/anaconda/envs/python3 is the location anaconda is installed in andrewosh/binder-base
+#-If this get's updated then the following instructions will break. 
+#-TODO: This step can be removed once the base image is upgraded to python=3.5
 
-# We run our docker images with a non-root user as a security precaution.
-# econ is our user
-RUN useradd -m -s /bin/bash econ
-RUN chown -R econ:econ $CONDA_DIR
+RUN wget --quiet https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda3-2.4.1-Linux-x86_64.sh
+RUN bash Anaconda3-2.4.1-Linux-x86_64.sh -b && rm Anaconda3-2.4.1-Linux-x86_64.sh
+ENV PATH $HOME/anaconda3/bin:$PATH
+RUN /bin/bash -c "ipython kernelspec install-self --user"
 
-EXPOSE 8888
-
-USER econ
-ENV HOME /home/econ
-ENV SHELL /bin/bash
-ENV USER econ
-ENV PATH $CONDA_DIR/bin:$PATH
-WORKDIR $HOME
-
-RUN conda install --yes ipython-notebook terminado && conda clean -yt
-
-RUN ipython profile create
-
-# Workaround for issue with ADD permissions
-USER root
-ADD notebooks/ /home/econ/
-RUN chown econ:econ /home/econ -R
-USER econ
-
-# Python packages
-RUN conda install --yes pip numpy pandas scikit-learn scikit-image matplotlib scipy seaborn sympy cython patsy statsmodels cloudpickle dill numba bokeh && conda clean -yt
-
-#Install QuantEcon
+#-Install Pip Packages
 RUN pip install quantecon
-#RUN source activate python2 && pip install quantecon && source deactivate python2
 
-# IJulia and Julia packages
-RUN julia -e 'Pkg.add("IJulia")'
-RUN julia -e 'Pkg.add("PyPlot")' && julia -e 'Pkg.add("Distributions")' && julia -e 'Pkg.add("KernelEstimator")' 
-# julia -e 'Pkg.add("Gadfly")' && julia -e 'Pkg.add("RDatasets")' &&
-RUN julia -e 'Pkg.add("QuantEcon")'
-
-# Convert notebooks to the current format
-RUN find /home/. -name '*.ipynb' -exec ipython nbconvert --to notebook {} --output {} \;
-RUN find /home/. -name '*.ipynb' -exec ipython trust {} \;
-
-CMD ipython notebook
+#-Julia Packages-#
+RUN echo "cacert=/etc/ssl/certs/ca-certificates.crt" > ~/.curlrc
+RUN julia -e 'Pkg.add("PyCall"); Pkg.checkout("PyCall"); Pkg.build("PyCall"); using PyCall'
+RUN julia -e 'Pkg.add("IJulia"); using IJulia'
+RUN julia -e 'Pkg.add("PyPlot"); Pkg.checkout("PyPlot"); Pkg.build("PyPlot"); using PyPlot' 
+RUN julia -e 'Pkg.add("Distributions"); using Distributions'
+RUN julia -e 'Pkg.add("KernelEstimator"); using KernelEstimator'
+RUN julia -e 'Pkg.add("QuantEcon"); using QuantEcon'
+RUN julia -e 'Pkg.add("Gadfly"); using Gadfly'
+RUN julia -e 'Pkg.add("Optim"); using Optim'
+RUN julia -e 'Pkg.add("Grid"); using Grid'

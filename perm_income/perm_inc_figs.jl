@@ -7,7 +7,8 @@ permanent income model with Gaussian iid income.
 @date: 07/09/2014
 =#
 
-using PyPlot
+using Plots
+pyplot()
 
 const r = 0.05
 const beta = 1.0 / (1.0 + r)
@@ -31,32 +32,25 @@ end
 
 # == Figure showing a typical realization == #
 function single_realization()
-    fig, ax = subplots()
-
-    ax[:grid]()
-    ax[:set_xlabel]("Time")
-    bbox = [0.0, 1.02, 1.0, 0.102]
-    p_args = {:lw=> 2, :alpha => 0.7}
-
     w, b, c = time_path()
-    ax[:plot](0:T, mu + sigma .* w, "g-", label="non-financial income"; p_args...)
-    ax[:plot](0:T, c, "k-", label="consumption"; p_args...)
-    ax[:plot](0:T, b, "b-", label="debt"; p_args...)
-    ax[:legend](ncol=3, bbox_to_anchor=bbox, loc="upper left", mode="expand")
+    p = plot(0:T, mu + sigma .* w, color=:green, label="non-financial income")
+    plot!(c, color=:black, label="consumption")
+    plot!(b, color=:blue, label="debt")
+    plot!(xlabel="Time", linewidth=2, alpha=0.7, xlims=(0, T))
 
-    return Void
+    return p
 end
 
 
 # == Figure showing multiple consumption paths == #
 function consumption_paths(n=250)  # n is number of paths
-    fix, ax = subplots()
-    ax[:grid]()
-    ax[:set_xlabel]("Time")
-    ax[:set_ylabel]("Consumption")
-    colors = ["c-", "g-", "k-", "b-"]
+    time_paths = []
+    
     for i=1:n
-        ax[:plot](0:T, time_path()[3], colors[rand(1:4)], lw=0.8, alpha=0.7)
+        push!(time_paths, time_path()[3])
     end
-    return Void
+
+    p = plot(time_paths, linewidth=0.8, alpha=0.7, legend=:none)
+    plot!(xlabel="Time", ylabel="Consumption", xlims=(0, T))
+    return p
 end

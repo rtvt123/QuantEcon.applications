@@ -71,9 +71,9 @@ class Arellano_Economy(object):
 
         # Create grids and discretize Markov process
         self.Bgrid = np.linspace(-.45, .45, nB)
-        log_ygrid, Py = qe.markov.tauchen(rho, eta, 3, ny)
-        self.ygrid = np.exp(log_ygrid)
-        self.Py = Py
+        self.mc = qe.markov.tauchen(rho, eta, 3, ny)
+        self.ygrid = np.exp(self.mc.state_values)
+        self.Py = self.mc.P
 
         # Output when in default
         ymean = np.mean(self.ygrid)
@@ -160,10 +160,8 @@ class Arellano_Economy(object):
             B_init = zero_B_index
         # Start off not in default
         in_default = False
-        # Initialize Markov chain for output
-        mc = qe.markov.MarkovChain(self.Py) 
 
-        y_sim_indices = mc.simulate(T, init=y_init)
+        y_sim_indices = self.mc.simulate_indices(T, init=y_init)
         B_sim_indices = np.empty(T, dtype=np.int64)
         B_sim_indices[0] = B_init
         q_sim = np.empty(T)

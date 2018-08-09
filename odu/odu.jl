@@ -14,6 +14,8 @@ http://quant-econ.net/jl/odu.html
 
 =#
 
+using QuantEcon
+using Interpolations
 using Distributions
 
 """
@@ -89,8 +91,8 @@ function SearchProblem(bet=0.95, c=0.6, F_a=1, F_b=1, G_a=3, G_b=1.2,
     pi_min = 1e-3  # avoids instability
     pi_max = 1 - pi_min
 
-    w_grid = linspace_range(0, w_max, w_grid_size)
-    pi_grid = linspace_range(pi_min, pi_max, pi_grid_size)
+    w_grid = linspace(0, w_max, w_grid_size)
+    pi_grid = linspace(pi_min, pi_max, pi_grid_size)
 
     nodes, weights = qnwlege(21, 0.0, w_max)
 
@@ -135,7 +137,8 @@ function bellman_operator!(sp::SearchProblem, v::Matrix, out::Matrix;
     f, g, bet, c = sp.f, sp.g, sp.bet, sp.c
     nodes, weights = sp.quad_nodes, sp.quad_weights
 
-    vf = CoordInterpGrid((sp.w_grid, sp.pi_grid), v, BCnan, InterpLinear)
+    vf = extrapolate(interpolate((sp.w_grid, sp.pi_grid), v, 
+                     Gridded(Linear())), Flat())
 
     # set up quadrature nodes/weights
     # q_nodes, q_weights = qnwlege(21, 0.0, sp.w_max)
@@ -218,13 +221,13 @@ function res_wage_operator!(sp::SearchProblem, phi::Vector, out::Vector)
     f, g, bet, c = sp.f, sp.g, sp.bet, sp.c
 
     # Construct interpolator over pi_grid, given phi
-    phi_f = CoordInterpGrid(sp.pi_grid, phi, BCnearest, InterpLinear)
+    phi_f = LinInterp(sp.pi_grid, phi)
 
     # set up quadrature nodes/weights
     q_nodes, q_weights = qnwlege(7, 0.0, sp.w_max)
 
     for (i, _pi) in enumerate(sp.pi_grid)
-        integrand(x) = max(x, phi_f[q(sp, x, _pi)]).*(_pi*f(x) + (1-_pi)*g(x))
+        integrand(x) = max(x, phi_f.(q(sp, x, _pi))).*(_pi*f(x) + (1-_pi)*g(x))
         integral = do_quad(integrand, q_nodes, q_weights)
         out[i] = (1 - bet)*c + bet*integral
     end

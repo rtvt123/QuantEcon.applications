@@ -2,13 +2,17 @@
 Visual illustration of when the law of large numbers fails
 
 @author : Spencer Lyon <spencer.lyon@nyu.edu>
+          Victoria Gregory <victoria.gregory@nyu.edu>
 
 References
 ----------
 Based off the original python file cauchy_samples.py
 =#
-using PyPlot
+
+using Plots
+pyplot()
 using Distributions
+using LaTeXStrings
 
 srand(12)  # reproducible results
 n = 200
@@ -16,11 +20,12 @@ dist = Cauchy()
 data = rand(dist, n)
 
 function plot_draws()
-    fig, ax = subplots()
-    ax[:plot](1:n, data, "bo", alpha=0.5)
-    ax[:vlines](1:n, 0, data, lw=0.2)
-    ax[:set_title]("$n observations from the Cauchy distribution")
-    Void
+    t = "$n observations from the Cauchy distribution"
+    N = repmat(linspace(1, n, n), 1, 2)'
+    heights = [zeros(1,n); data']
+    plot(1:n, data, color=:blue, markershape=:circle,
+         alpha=0.5, title=t, legend=:none, linewidth=0)
+    plot!(N, heights, linewidth=0.5, color=:blue)
 end
 
 
@@ -32,11 +37,11 @@ function plot_means()
     end
 
     # == Plot == #
-    fig, ax = subplots()
-    ax[:plot](1:n, sample_mean, "r-", lw=3, alpha=0.6, label=L"$\bar{X}_n$")
-    ax[:plot](1:n, zeros(n), "k--", lw=0.5)
-    ax[:legend]()
-    Void
+    plot(1:n, sample_mean, color=:red,
+         alpha=0.6, label=L"$\bar{X}_n$",
+         linewidth=3, legendfont=font(12))
+    plot!(1:n, zeros(n), color=:black,
+          linewidth=1, linestyle=:dash, label="", grid=false)
 end
 
 plot_draws()

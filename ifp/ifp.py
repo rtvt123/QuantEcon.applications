@@ -13,7 +13,6 @@ References
 http://quant-econ.net/py/ifp.html
 
 """
-from textwrap import dedent
 import numpy as np
 from scipy.optimize import fminbound, brentq
 from scipy import interp
@@ -67,33 +66,6 @@ class ConsumerProblem(object):
         self.Pi, self.z_vals = np.array(Pi), tuple(z_vals)
         self.asset_grid = np.linspace(-b, grid_max, grid_size)
 
-    def __repr__(self):
-        m = "ConsumerProblem(r={r:g}, beta={be:g}, Pi='{n:g} by {n:g}', "
-        m += "z_vals={z}, b={b:g}, grid_max={gm:g}, grid_size={gs:g}, "
-        m += "u={u}, du={du})"
-        return m.format(r=self.r, be=self.beta, n=self.Pi.shape[0],
-                        z=self.z_vals, b=self.b,
-                        gm=self.asset_grid.max(), gs=self.asset_grid.size,
-                        u=self.u, du=self.du)
-
-    def __str__(self):
-        m = """
-        Consumer Problem (optimal savings):
-          - r (interest rate)                          : {r:g}
-          - beta (discount rate)                       : {be:g}
-          - Pi (transition matrix)                     : {n} by {n}
-          - z_vals (state space of shocks)             : {z}
-          - b (borrowing constraint)                   : {b:g}
-          - grid_max (maximum of asset grid)           : {gm:g}
-          - grid_size (number of points in asset grid) : {gs:g}
-          - u (utility function)                       : {u}
-          - du (marginal utility function)             : {du}
-        """
-        return dedent(m.format(r=self.r, be=self.beta, n=self.Pi.shape[0],
-                               z=self.z_vals, b=self.b,
-                               gm=self.asset_grid.max(),
-                               gs=self.asset_grid.size, u=self.u,
-                               du=self.du))
 
     def bellman_operator(self, V, return_policy=False):
         """
@@ -132,7 +104,7 @@ class ConsumerProblem(object):
                 def obj(c):  # objective function to be *minimized*
                     y = sum(vf(R * a + z - c, j) * Pi[i_z, j] for j in z_idx)
                     return - u(c) - beta * y
-                c_star = fminbound(obj, np.min(z_vals), R * a + z + b)
+                c_star = fminbound(obj, 1e-8, R * a + z + b)
                 new_c[i_a, i_z], new_V[i_a, i_z] = c_star, -obj(c_star)
 
         if return_policy:
@@ -188,7 +160,7 @@ class ConsumerProblem(object):
                 def h(t):
                     expectation = np.dot(du(cf(R * a + z - t)), Pi[i_z, :])
                     return du(t) - max(gamma * expectation, du(R * a + z + b))
-                Kc[i_a, i_z] = brentq(h, np.min(z_vals), R * a + z + b)
+                Kc[i_a, i_z] = brentq(h, 1e-8, R * a + z + b)
 
         return Kc
 

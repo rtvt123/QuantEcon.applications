@@ -8,11 +8,10 @@ import numpy as np
 from scipy.optimize import root
 from scipy.optimize import fmin_slsqp
 from scipy.interpolate import UnivariateSpline
-from quantecon import compute_fixed_point
-from quantecon.markov import mc_sample_path
+from quantecon import compute_fixed_point, MarkovChain
 
 
-class Planners_Allocation_Sequential(object):
+class Planners_Allocation_Sequential:
     '''
     Class returns planner's allocation as a function of the multiplier on the 
     implementability constraint mu
@@ -23,6 +22,7 @@ class Planners_Allocation_Sequential(object):
         '''
         self.beta = Para.beta
         self.Pi = Para.Pi
+        self.mc = MarkovChain(self.Pi)
         self.G = Para.G
         self.S = len(Para.Pi) # number of states
         self.Theta = Para.Theta
@@ -134,7 +134,7 @@ class Planners_Allocation_Sequential(object):
         
         
         if sHist == None:
-            sHist = mc_sample_path(Pi,s_0,T)
+            sHist = self.mc.simulate(s_0,T)
         
         cHist,nHist,Bhist,TauHist,muHist = np.zeros((5,T))
         RHist = np.zeros(T-1)
@@ -162,7 +162,7 @@ class Planners_Allocation_Sequential(object):
             
     
   
-class Planners_Allocation_Bellman(object):
+class Planners_Allocation_Bellman:
     '''
     Compute the planner's allocation by solving Bellman
     equation.
@@ -173,6 +173,7 @@ class Planners_Allocation_Bellman(object):
         '''
         self.beta = Para.beta
         self.Pi = Para.Pi
+        self.mc = MarkovChain(self.Pi)
         self.G = Para.G
         self.S = len(Para.Pi) # number of states
         self.Theta = Para.Theta
@@ -274,7 +275,7 @@ class Planners_Allocation_Bellman(object):
         cf,nf,xprimef = self.policies
         
         if sHist == None:
-            sHist = mc_sample_path(Pi,s_0,T)
+            sHist = self.mc.simulate(s_0,T)
         
         cHist,nHist,Bhist,TauHist,muHist = np.zeros((5,T))
         RHist = np.zeros(T-1)

@@ -1,5 +1,5 @@
 """
-Tests for quantecon.models.lucastree
+Tests for lucastree
 
 @author : Spencer Lyon
 @date : 2014-08-05 09:15:45
@@ -8,7 +8,7 @@ Tests for quantecon.models.lucastree
 from __future__ import division
 from nose.tools import (assert_equal, assert_true, assert_less_equal)
 import numpy as np
-from quantecon.models import LucasTree
+from lucastree import LucasTree
 from quantecon.tests import (get_h5_data_file, get_h5_data_group, write_array,
                              max_abs_diff)
 

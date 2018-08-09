@@ -1,45 +1,45 @@
-using PyPlot
+using Plots
+pyplot()
 
 A = [1.0 2.0
      2.0 1.0]
 
-evals, evecs = eig(A)
-evecs =(evecs[:,1], evecs[:,2])
-
-fig, ax = subplots()
-for spine in ["left", "bottom"]
-    ax[:spines][spine][:set_position]("zero")
-end
-
-for spine in ["right", "top"]
-    ax[:spines][spine][:set_color]("none")
-end
-ax[:grid](alpha=0.4)
-
 xmin, xmax = -3, 3
 ymin, ymax = -3, 3
-ax[:set_xlim](xmin, xmax)
-ax[:set_ylim](ymin, ymax)
 
+evals, evecs = eig(A)
+
+# Extract x and y values of each eigenvector, arrange for plotting
+x_vals = [zeros(1, size(A, 1)); evecs[1,:]]
+y_vals = [zeros(1, size(A, 1)); evecs[2,:]]
+
+# Image of each eigenvector
+evecs =(evecs[:,1], evecs[:,2])
+images = [[] []]'
 for v in evecs
-    # Plot each eigenvector
-    ax[:annotate](" ", xy=v, xytext=[0, 0],
-                  arrowprops={"facecolor"=>"blue",
-                              "shrink"=>0,
-                              "alpha"=>0.6,
-                              "width"=>0.5})
-
-    # Plot the image of each eigenvector
-    v = A * v
-    ax[:annotate](" ", xy=v, xytext=[0, 0],
-                  arrowprops={"facecolor"=>"red",
-                              "shrink"=>0,
-                              "alpha"=>0.6,
-                              "width"=>0.5})
+  v = A * v
+  images = hcat(images, v)
 end
+
+# Extract x and y values of each image, arrange for plotting
+x_ims = [zeros(1, size(A, 1)); images[1, :]]
+y_ims = [zeros(1, size(A, 1)); images[2, :]]
 
 x = linspace(xmin, xmax, 3)
+as = []
 for v in evecs
     a = v[2] / v[1]
-    ax[:plot](x, a .* x, "b-", lw=0.4)
+    push!(as, a .* x)
 end
+
+# Plot each vector and its image
+plot(x_ims, y_ims, arrow=true, color=:red,
+     legend=:none, linewidth=1.8)
+plot!(x_vals, y_vals, arrow=:true, color=:blue,
+      xlims=(xmin, xmax), ylims=(ymin, ymax),
+      legend=:none, linewidth=1.8)
+plot!(x, as, color=:black, linewidth=0.3)
+vline!([0], color=:black)
+hline!([0], color=:black)
+plot!(foreground_color_axis=:white, foreground_color_text=:white,
+      foreground_color_border=:white)

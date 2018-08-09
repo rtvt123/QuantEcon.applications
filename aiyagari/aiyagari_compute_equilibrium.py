@@ -11,17 +11,25 @@ from aiyagari_household import Household, asset_marginal
 from quantecon.markov import DiscreteDP
 
 
-A = 2.5
-N = 0.05
+A = 1.0
+N = 1.0
 alpha = 0.33
 beta = 0.96
+delta = 0.05
 
 
 def r_to_w(r):
-    return A * (1 - alpha) * (alpha / (1 + r))**(alpha / (1 - alpha))
+    """
+    Equilibrium wages associated with a given interest rate r.
+    """
+    return A * (1 - alpha) * (A * alpha / (r + delta))**(alpha / (1 - alpha))
 
 def rd(K):
-    return A * alpha * (N / K)**(1 - alpha)
+    """
+    Inverse demand curve for capital.  The interest rate associated with a
+    given demand for capital K.
+    """
+    return A * alpha * (N / K)**(1 - alpha) - delta
 
 
 def prices_to_capital_stock(am, r):
@@ -57,7 +65,7 @@ am_ddp = DiscreteDP(am.R, am.Q, am.beta)
 
 # Create a grid of r values at which to compute demand and supply of capital
 num_points = 20
-r_vals = np.linspace(0.0, 0.04, num_points)
+r_vals = np.linspace(0.005, 0.04, num_points)
 
 # Compute supply of capital
 k_vals = np.empty(num_points)
